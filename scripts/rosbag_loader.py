@@ -4,12 +4,9 @@
 # In[12]:
 
 
-import rosbag
-import numpy as np
+
 import sensor_msgs.point_cloud2 as pc2
-from sensor_msgs.msg import PointCloud2, CompressedImage
-import cv2
-import time
+from sensor_msgs.msg import PointCloud2, CompressedImage, Imu
 import rospy
 import subprocess
 import message_filters
@@ -37,52 +34,27 @@ def convert_pc_msg_to_np(message, t):
 
 
 counter = 0
-# for topic, msg, t in bag.read_messages(topics=['/velodyne_points']):
-#     counter += 1
-#     convert_pc_msg_to_np(msg, t)
-#     print('point: ', counter)
-
-
-# In[11]:
-
-
-# bag.close()
-
-
-# In[ ]:
-
-
-
-
-
-# In[6]:
-
-
-# rosbag_play_process = subprocess.Popen(
-#         ['rosbag', 'play', '../135970', '-r', '1.0', '--clock'])
-
-
-# In[13]:
 
 rospy.init_node('listen_record_data', anonymous=True)
 
-def callback(lidar, rgb):
-    print('found lidar and rgb data')
-    print(lidar.header)
-    print(rgb.header)
+def callback(lidar, rgb, imu):
+    print('*******Found lidar, rgb and Imu data**********')
+    # print(lidar.header)
+    # print(rgb.header)
+    print(imu)
 
 
 rosbag_play_process = subprocess.Popen(
-        ['rosbag', 'play', '../135970', '-r', '1.0', '--clock'], 50)
+        ['rosbag', 'play', '../133231', '-r', '1.0', '--clock'])
 
 
 lidar = message_filters.Subscriber('/velodyne_points', PointCloud2)
-rgb = message_filters.Subscriber('/left/image_color/compressed', CompressedImage)
-ts = message_filters.ApproximateTimeSynchronizer([lidar, rgb], 100, 0.05, allow_headerless=True)
+rgb = message_filters.Subscriber('/camera/rgb/image_raw/compressed', CompressedImage)
+imu = message_filters.Subscriber('/imu/data_raw', Imu)
+ts = message_filters.ApproximateTimeSynchronizer([lidar, rgb, imu], 100, 0.05, allow_headerless=True)
 ts.registerCallback(callback)
 
 rospy.spin()
-
 
 # In[ ]:
 
