@@ -22,9 +22,6 @@ play_back_snapshot = {}
 
 rosbag_path = sys.argv[1]
 
-print('rosbag_path',rosbag_path)
-
-print(sys.argv)
 bag_file_name = rosbag_path.split('/')[-1]
 
 record_storage_path = os.path.join('../recorded-data', bag_file_name)        
@@ -47,7 +44,7 @@ def odom_callback(odom):
 
         if 0 < ((robot_pos[0] - position.x) ** 2 + (robot_pos[1] - position.y) ** 2 - 100) <= 2:
             play_back_snapshot[robot_pos[2]]["local_goal"] = (position.x, position.y)
-            print("local goal foudn for index", robot_pos[2])
+            # print("local goal foudn for index", robot_pos[2])
             del previous_rbt_location[idx]
             break
 
@@ -72,7 +69,6 @@ def store_image(rgb_image, idx):
     image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
     image = cv2.resize(image, (264, 300))
     image_path = os.path.join(record_storage_path, str(idx)+".jpg")
-    print(image_path)
     cv2.imwrite(image_path, image)
 
 
