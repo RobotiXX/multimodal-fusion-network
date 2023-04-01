@@ -114,7 +114,7 @@ odom.registerCallback(odom_callback)
 
 while not rospy.is_shutdown():
     if rosbag_play_process.poll() is not None:
-        print('Rosbag play has stopped now save the data')                
+        print('Rosbag play has stopped, saving the data at:', record_storage_path)                
         pickle_file = os.path.join(record_storage_path, "snapshot.pickle")
         
         with open(pickle_file, 'wb') as handle:
