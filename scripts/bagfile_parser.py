@@ -21,6 +21,9 @@ previous_velocities = []
 play_back_snapshot = {}
 
 rosbag_path = sys.argv[1]
+
+print('rosbag_path',rosbag_path)
+
 print(sys.argv)
 bag_file_name = rosbag_path.split('/')[-1]
 

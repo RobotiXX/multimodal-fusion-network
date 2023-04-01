@@ -1,7 +1,16 @@
-import pickle
+import os
+import subprocess
 
-with open('/Users/bhabaranjanpanigrahi/Research/Code/fusion-network/recorded-data/133231.bag/snapshot.pickle', 'rb') as f:
-    x = pickle.load(f)
-    # print(len(x[1]['point_cloud'][1]))
-    # print(len(x[1]['point_cloud'][0]))
-    print(x[1].keys())
+file_list = os.listdir('../bagfiles/')
+
+for file in file_list:
+    if file != '.DS_Store':
+        process = subprocess.Popen([
+            'python3', 'bagfile_parser.py', os.path.join(str('../bagfiles'),file)
+        ])
+        print("Processing file:", file)
+    
+        while True:
+            if process.poll() is not None:
+                print("Processed finshed:", file)
+                break
