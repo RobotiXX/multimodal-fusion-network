@@ -132,4 +132,4 @@ dmypy.json
 bagfiles/
 ros_comm/
 Images/
-recorded-data/
+recorded-data/**/
