@@ -1,7 +1,7 @@
 import os
 import subprocess
 
-file_list = os.listdir('../bagfiles/')
+file_list = os.listdir('../../bagfiles/')
 
 print("Number of files:", len(file_list))
 
@@ -10,7 +10,7 @@ for idx, file in enumerate(file_list):
     
     if file != '.DS_Store':
         process = subprocess.Popen([
-            'python3', 'bagfile_parser.py', os.path.join(str('../bagfiles'),file)
+            'python3', 'bagfile_parser.py', os.path.join(str('../../bagfiles'),file)
         ])
         print(">>>>>>>>>>>>>>>>>> Processing file:", file)
     
