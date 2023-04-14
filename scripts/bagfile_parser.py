@@ -34,7 +34,7 @@ def odom_callback(odom):
 
     # store 20 latest liner and angular velocities
     previous_velocities.insert(0, (cmd_vel.linear.x, cmd_vel.angular.y))
-    if len(previous_velocities) > 20:
+    if len(previous_velocities) > 21:
         previous_velocities.pop()
 
     for idx, robot_pos in enumerate(previous_rbt_location):
@@ -42,7 +42,7 @@ def odom_callback(odom):
         # then use current point as a local goal of the previous position(robot's prev location)
         # TODO: should be done as a perpendicular intersection instead of delta approximation of 2
 
-        if 0 < ((robot_pos[0] - position.x) ** 2 + (robot_pos[1] - position.y) ** 2 - 100) <= 2:
+        if ((robot_pos[0] - position.x) ** 2 + (robot_pos[1] - position.y) ** 2 ) >= 100:
             play_back_snapshot[robot_pos[2]]["local_goal"] = (position.x, position.y)
             # print("local goal foudn for index", robot_pos[2])
             del previous_rbt_location[idx]
@@ -56,7 +56,6 @@ def get_lidar_points(lidar):
         pt_y = point[1]
         pt_z = point[2]
         point_cloud.append([pt_x, pt_y, pt_z])
-
     return point_cloud
 
 
@@ -74,6 +73,7 @@ def store_image(rgb_image, idx):
 
 def aprrox_sync_callback(lidar, rgb, odom):
     pos = odom.pose.pose.position
+    cmd_vel = odom.twist.twist
     # This function is called at 10Hz
     # Subsampling at each 5th second approx
     if counter['sub-sampler'] % 6 == 0:
@@ -81,11 +81,15 @@ def aprrox_sync_callback(lidar, rgb, odom):
         store_image(rgb, counter['index'])
         point_cloud = get_lidar_points(lidar)
         prev_cmd_vel = get_prev_cmd_val()
+        prev_cmd_vel.pop()
+        gt_cmd_vel = (cmd_vel.linear.x, cmd_vel.angular.y)
         robot_pos = (pos, odom.pose.pose.orientation, counter['index'])
+        # Record data at current point
         play_back_snapshot[counter['index']] = {
             "point_cloud": point_cloud,
             "prev_cmd_vel": prev_cmd_vel,
-            "robot_position": robot_pos
+            "robot_position": robot_pos,
+            "gt_cmd_vel": gt_cmd_vel
         }
         previous_rbt_location.append((pos.x, pos.y, counter['index']))
 
