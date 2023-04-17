@@ -29,13 +29,13 @@ def cart2polar(xyz):
 
 
 class transform_data(Dataset):
-    def __init__(self, image_paths, point_clouds, local_goal, prev_cmd_vel, robot_position, gt_cmd_vel, grid_size):
-        self.image_paths = image_paths
-        self.point_clouds = point_clouds
-        self.local_goal = local_goal
-        self.prev_cmd_vel = prev_cmd_vel
-        self.robot_position  = robot_position
-        self.gt_cmd_vel = gt_cmd_vel
+    def __init__(self, input_data, grid_size):
+        self.image_paths = input_data[0]
+        self.point_clouds = input_data[1]
+        self.local_goal = input_data[2]
+        self.prev_cmd_vel = input_data[3]        
+        self.robot_position  = input_data[4]
+        self.gt_cmd_vel = input_data[5]
         self.grid_size = grid_size        
     
     def __len__(self):
@@ -46,7 +46,7 @@ class transform_data(Dataset):
         # Transform images
         images = [read_images(path) for path in self.image_paths]
         stacked_images = np.stack((images), axis=2)
-
+        
         # Transform local goal into robot frame
         robot_coordinate_in_glob_frame = get_transformation_matrix(self.robot_position[0],self.robot_position[1])
         transform_to_robot_coordinate =   np.linalg.pinv(robot_coordinate_in_glob_frame)
@@ -84,7 +84,7 @@ class transform_data(Dataset):
 
         point_cloud_transformed = (grid_index, transformed_pcl)
 
-        return stacked_images, point_cloud_transformed, local_goal, self.prev_cmd_vel, self.gt_cmd_vel
+        return (stacked_images, point_cloud_transformed, local_goal, self.prev_cmd_vel, self.gt_cmd_vel)
 
 
 

@@ -8,11 +8,12 @@ coloredlogs.install()
 class data_preprocessing(Dataset):
 
     def __init__(self, dir_path):        
-        self.path = os.path.join(dir_path , 'snapshot.pickle')        
+        self.root_path = dir_path
+        self.pickle_path = os.path.join(dir_path , 'snapshot.pickle')        
         
         logging.info('Parsing pickle file...')
     
-        with open(self.path, 'rb') as data:
+        with open(self.pickle_path, 'rb') as data:
             self.content = pickle.load(data)
 
         logging.info('Picklefile loaded')
@@ -20,7 +21,7 @@ class data_preprocessing(Dataset):
     def __len__(self):
         # Excluding last 2 minutes of recording
         # Snapshot is taken at 2 frames per second
-        return (len(self.keys()) - 244) / 4
+        return int((len(self.content.keys()) - 244) / 4)
     
     def __getitem__(self, offset_index) :
         # We are taking 4 sequential images, point clouds each time to account for temporal variation
@@ -34,22 +35,16 @@ class data_preprocessing(Dataset):
         robot_position = self.content[end_index]['robot_position']
         
         # Image paths
-        image_paths = [ os.path.join(self.dir_path, str(i), '.jpg') for i in range(start_index, end_index+1) ]
+        image_paths = [ os.path.join(self.root_path, str(i)+'.jpg') for i in range(start_index, end_index+1) ]
         
-        # only keep points that are under 5 meters from the robot
+        # only keep points that are under 5 + 1 (delta) meters from the robot
         point_clouds = []
         for point_snapshot in range(start_index, end_index+1):
             filtered_points = []
             for point in self.content[point_snapshot]['point_cloud']:
                 if (point[0]**2 + point[1]**2 + point[2]**2) <= 26:
                     filtered_points.append(point)
-            point_clouds.append(filtered_points)
-                
+            point_clouds.append(filtered_points)                
 
 
-        return image_paths, point_clouds, local_goal, prev_cmd_vel, robot_position, gt_cmd_vel
-
-        
-
-
-
+        return (image_paths, point_clouds, local_goal, prev_cmd_vel, robot_position, gt_cmd_vel)
