@@ -1,6 +1,4 @@
-import torch
 import pickle
-import numpy as np
 import coloredlogs, logging
 import os
 
@@ -13,7 +11,7 @@ class data_preprocessing(Dataset):
         self.path = os.path.join(dir_path , 'snapshot.pickle')        
         
         logging.info('Parsing pickle file...')
-
+    
         with open(self.path, 'rb') as data:
             self.content = pickle.load(data)
 
@@ -30,9 +28,10 @@ class data_preprocessing(Dataset):
         end_index = start_index + 3
 
         # Get data from respective index
-        prev_cmd_vel = self.content[end_index]
-        gt_cmd_vel = self.content[end_index]
-        local_goal = self.content[end_index]
+        prev_cmd_vel = self.content[end_index]['prev_cmd_vel']
+        gt_cmd_vel = self.content[end_index]['gt_cmd_vel']
+        local_goal = self.content[end_index]['local_goal']
+        robot_position = self.content[end_index]['robot_position']
         
         # Image paths
         image_paths = [ os.path.join(self.dir_path, str(i), '.jpg') for i in range(start_index, end_index+1) ]
@@ -46,7 +45,9 @@ class data_preprocessing(Dataset):
                     filtered_points.append(point)
             point_clouds.append(filtered_points)
         
-        return image_paths, point_clouds, local_goal, prev_cmd_vel, gt_cmd_vel
+        # subsample the point clouds to keep a fixed number of points across frames
+        
+        return image_paths, point_clouds, local_goal, prev_cmd_vel, robot_position, gt_cmd_vel
 
         
 
