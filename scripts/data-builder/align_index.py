@@ -41,12 +41,12 @@ class data_preprocessing(Dataset):
         for point_snapshot in range(start_index, end_index+1):
             filtered_points = []
             for point in self.content[point_snapshot]['point_cloud']:
-                if (point[0]**2 + point[1]**2 + point[2]**2 ) <= 26:
+                if (point[0]**2 + point[1]**2 + point[2]**2) <= 26:
                     filtered_points.append(point)
             point_clouds.append(filtered_points)
-        
-        # subsample the point clouds to keep a fixed number of points across frames
-        
+                
+
+
         return image_paths, point_clouds, local_goal, prev_cmd_vel, robot_position, gt_cmd_vel
 
         
