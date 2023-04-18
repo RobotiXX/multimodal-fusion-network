@@ -133,3 +133,4 @@ bagfiles/
 ros_comm/
 Images/
 recorded-data/**/
+random/**/

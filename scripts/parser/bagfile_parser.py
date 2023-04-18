@@ -24,7 +24,7 @@ rosbag_path = sys.argv[1]
 
 bag_file_name = rosbag_path.split('/')[-1]
 
-record_storage_path = os.path.join('../recorded-data', bag_file_name)        
+record_storage_path = os.path.join('../../recorded-data', bag_file_name)        
 os.makedirs(record_storage_path, exist_ok=True)
 
 
@@ -66,7 +66,7 @@ def get_prev_cmd_val():
 def store_image(rgb_image, idx):
     np_arr = np.frombuffer(rgb_image.data, np.uint8)
     image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-    image = cv2.resize(image, (264, 300))
+    # image = cv2.resize(image, (264, 300))
     image_path = os.path.join(record_storage_path, str(idx)+".jpg")
     cv2.imwrite(image_path, image)
 
@@ -103,11 +103,11 @@ rospy.init_node('listen_record_data', anonymous=True)
 
 
 rosbag_play_process = subprocess.Popen(
-    ['rosbag', 'play', '--clock', rosbag_path, '-u', '6'])
+    ['rosbag', 'play', '--clock', rosbag_path])
 
 lidar = message_filters.Subscriber('/velodyne_points', PointCloud2)
-rgb = message_filters.Subscriber('/camera/rgb/image_raw/compressed', CompressedImage)
-odom = message_filters.Subscriber('/jackal_velocity_controller/odom', Odometry)
+rgb = message_filters.Subscriber('/image_raw/compressed', CompressedImage)
+odom = message_filters.Subscriber('/odom', Odometry)
 ts = message_filters.ApproximateTimeSynchronizer([lidar, rgb, odom], 100, 0.05, allow_headerless=True)
 
 ts.registerCallback(aprrox_sync_callback)
