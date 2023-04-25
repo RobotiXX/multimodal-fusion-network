@@ -33,8 +33,8 @@ def odom_callback(odom):
     cmd_vel = odom.twist.twist
 
     # store 20 latest liner and angular velocities
-    previous_velocities.insert(0, (cmd_vel.linear.x, cmd_vel.angular.y))
-    if len(previous_velocities) > 21:
+    previous_velocities.insert(0, (cmd_vel.linear.x, cmd_vel.angular.z))
+    if len(previous_velocities) > 20:
         previous_velocities.pop()
 
     for idx, robot_pos in enumerate(previous_rbt_location):
@@ -82,7 +82,7 @@ def aprrox_sync_callback(lidar, rgb, odom):
         point_cloud = get_lidar_points(lidar)
         prev_cmd_vel = get_prev_cmd_val()
         prev_cmd_vel.pop()
-        gt_cmd_vel = (cmd_vel.linear.x, cmd_vel.angular.y)
+        gt_cmd_vel = (cmd_vel.linear.x, cmd_vel.angular.z)
         robot_pos = (pos, odom.pose.pose.orientation, counter['index'])
         # Record data at current point
         play_back_snapshot[counter['index']] = {

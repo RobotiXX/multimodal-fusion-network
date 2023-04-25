@@ -5,7 +5,7 @@ import os
 from torch.utils.data import Dataset
 coloredlogs.install()
 
-class data_preprocessing(Dataset):
+class IndexDataset(Dataset):
 
     def __init__(self, dir_path):        
         self.root_path = dir_path
@@ -18,10 +18,15 @@ class data_preprocessing(Dataset):
 
         logging.info('Picklefile loaded')
 
+        # Exclude keys that does not have a local goal [as the robot did not travel 10 meters]
+        keys = list(self.content.keys())
+        for key in keys:
+            if 'local_goal' not in self.content[key].keys():
+                self.content.pop(key)
+
     def __len__(self):
-        # Excluding last 2 minutes of recording
-        # Snapshot is taken at 2 frames per second
-        return int((len(self.content.keys()) - 244) / 4)
+        # As images and point clouds will be in sets of 4
+        return int(len(self.content.keys()) / 4)
     
     def __getitem__(self, offset_index) :
         # We are taking 4 sequential images, point clouds each time to account for temporal variation

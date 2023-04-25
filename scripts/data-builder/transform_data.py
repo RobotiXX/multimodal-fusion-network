@@ -28,8 +28,9 @@ def cart2polar(xyz):
     return np.stack((r,theta, xyz[:,2]), axis=1)
 
 
-class transform_data(Dataset):
+class ApplyTransformation(Dataset):
     def __init__(self, input_data, grid_size):
+        # input (image_paths, point_clouds, local_goal, prev_cmd_vel, robot_position, gt_cmd_vel)
         self.image_paths = input_data[0]
         self.point_clouds = input_data[1]
         self.local_goal = input_data[2]
