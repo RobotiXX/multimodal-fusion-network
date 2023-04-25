@@ -1,4 +1,5 @@
 import torch
+from torchvision import transforms
 import pickle
 import numpy as np
 import coloredlogs, logging
@@ -11,6 +12,7 @@ from scipy.spatial.transform import Rotation as R
 coloredlogs.install()
 
 def read_images(path):
+    # print(f"{path = }")
     image = cv2.imread(path)
     # Will have to do some re-sizing
     return cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -29,25 +31,40 @@ def cart2polar(xyz):
 
 
 class ApplyTransformation(Dataset):
-    def __init__(self, input_data, grid_size):
+    def __init__(self, input_data, grid_size = [72, 30, 30]):
         # input (image_paths, point_clouds, local_goal, prev_cmd_vel, robot_position, gt_cmd_vel)
-        self.image_paths = input_data[0]
-        self.point_clouds = input_data[1]
-        self.local_goal = input_data[2]
-        self.prev_cmd_vel = input_data[3]        
-        self.robot_position  = input_data[4]
-        self.gt_cmd_vel = input_data[5]
-        self.grid_size = np.asarray(grid_size)        
+        # self.image_paths = input_data[0]
+        # self.point_clouds = input_data[1]
+        # self.local_goal = input_data[2]
+        # self.prev_cmd_vel = input_data[3]        
+        # self.robot_position  = input_data[4]
+        # self.gt_cmd_vel = input_data[5]
+        self.grid_size = np.asarray(grid_size)  
+        self.input_data = input_data    
+        self.image_transforms = transforms.Compose([
+                    transforms.ToTensor(),
+                    transforms.Resize((224,224),antialias=True),
+                    # transforms.Normalize(mean=[0.485, 0.456, 0.406],  # ImageNet mean hardcoded
+                    #                       std=[0.229, 0.224, 0.225])  # ImageNet std hardcoded
+            ])
     
     def __len__(self):
          # TODO: this will return 1 example set with the following details
-        return 1
+        return len(self.input_data)
 
     def __getitem__(self, index):
         # Transform images
-        images = [read_images(path) for path in self.image_paths]
-        stacked_images = np.stack((images), axis=2)
+        self.image_paths = self.input_data[index][0]
+        self.point_clouds = self.input_data[index][1]
+        self.local_goal = self.input_data[index][2]
+        self.prev_cmd_vel = self.input_data[index][3]        
+        self.robot_position  = self.input_data[index][4]
+        self.gt_cmd_vel = self.input_data[index][5]
+        
 
+        images = [ self.image_transforms(read_images(path)) for path in self.image_paths]
+        stacked_images = torch.cat(images, dim=0)
+        
         # Transform local goal into robot frame
         robot_coordinate_in_glob_frame = get_transformation_matrix(self.robot_position[0],self.robot_position[1])
         transform_to_robot_coordinate =   np.linalg.pinv(robot_coordinate_in_glob_frame)
@@ -84,7 +101,14 @@ class ApplyTransformation(Dataset):
 
         point_cloud_transformed = (grid_index, transformed_pcl)
 
-        return (stacked_images, point_cloud_transformed, local_goal, self.prev_cmd_vel, self.gt_cmd_vel)
+        local_goal = torch.tensor(local_goal, dtype=torch.float32).ravel()
+        local_goal = (local_goal - local_goal.min()) / (local_goal.max() - local_goal.min())
+
+        prev_cmd_vel = torch.tensor(self.prev_cmd_vel, dtype=torch.float32).ravel()
+        gt_cmd_vel = torch.tensor(self.gt_cmd_vel, dtype=torch.float32).ravel()
+
+
+        return (stacked_images, local_goal, prev_cmd_vel, gt_cmd_vel)
 
 
 

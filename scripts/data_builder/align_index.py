@@ -51,5 +51,4 @@ class IndexDataset(Dataset):
                     filtered_points.append(point)
             point_clouds.append(filtered_points)                
 
-
         return (image_paths, point_clouds, local_goal, prev_cmd_vel, robot_position, gt_cmd_vel)
