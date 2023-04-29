@@ -32,13 +32,6 @@ def cart2polar(xyz):
 
 class ApplyTransformation(Dataset):
     def __init__(self, input_data, grid_size = [72, 30, 30]):
-        # input (image_paths, point_clouds, local_goal, prev_cmd_vel, robot_position, gt_cmd_vel)
-        # self.image_paths = input_data[0]
-        # self.point_clouds = input_data[1]
-        # self.local_goal = input_data[2]
-        # self.prev_cmd_vel = input_data[3]        
-        # self.robot_position  = input_data[4]
-        # self.gt_cmd_vel = input_data[5]
         self.grid_size = np.asarray(grid_size)  
         self.input_data = input_data    
         self.image_transforms = transforms.Compose([
@@ -108,7 +101,7 @@ class ApplyTransformation(Dataset):
         gt_cmd_vel = torch.tensor(self.gt_cmd_vel, dtype=torch.float32).ravel()
 
 
-        return (stacked_images, local_goal, prev_cmd_vel, gt_cmd_vel)
+        return (stacked_images, point_cloud_transformed, local_goal, prev_cmd_vel, gt_cmd_vel)
 
 
 
