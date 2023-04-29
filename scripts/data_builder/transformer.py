@@ -92,16 +92,13 @@ class ApplyTransformation(Dataset):
         return_xyz = xyz_polar - voxel_centers
         transformed_pcl = np.concatenate((return_xyz, xyz_polar, point_clouds[:, :2]), axis=1)
 
-        point_cloud_transformed = (grid_index, transformed_pcl)
-
         local_goal = torch.tensor(local_goal, dtype=torch.float32).ravel()
         local_goal = (local_goal - local_goal.min()) / (local_goal.max() - local_goal.min())
 
         prev_cmd_vel = torch.tensor(self.prev_cmd_vel, dtype=torch.float32).ravel()
         gt_cmd_vel = torch.tensor(self.gt_cmd_vel, dtype=torch.float32).ravel()
 
-
-        return (stacked_images, point_cloud_transformed, local_goal, prev_cmd_vel, gt_cmd_vel)
+        return (stacked_images, torch.tensor(grid_index), torch.tensor(transformed_pcl), local_goal, prev_cmd_vel, gt_cmd_vel)
 
 
 
