@@ -4,14 +4,16 @@ import torch
 import torch.nn as nn
 from torchvision.models import resnet18, ResNet18_Weights
 
-from backbone_cloud import Asymm_3d_spconv
+from backbone import Backbone
 from ..image.backbone import make_mlp
+from feature_encoder import FeatureEncoder
+from spconv import Asymm_3d_spconv
 
 
 class BCModelPcl(nn.Module):
     def __init__(
-        self,
-        backbone: str = "resnet18",
+        self,        
+        sparse_shape = [480, 360, 32],
         controller_encoder: list = [768, 256, 128, 64, 2],
         goal_encoder: list = [2, 256, 128],
         prev_cmd_encoder: list = [2 * 18, 64, 128],
@@ -22,7 +24,9 @@ class BCModelPcl(nn.Module):
     ):
 
         super().__init__()
-        self.backbone = Asymm_3d_spconv(backbone, n_frames, n_channels)
+        self.feat_encoder = FeatureEncoder()
+        self.spconv = Asymm_3d_spconv()
+        self.backbone = Backbone(self.feat_encoder, self.spconv, sparse_shape)
         self.controller = make_mlp(controller_encoder, act, l_act, bn, dropout)
         self.goal_encoder = make_mlp(goal_encoder, act, l_act, bn, dropout)
         self.prev_cmd_encoder = make_mlp(prev_cmd_encoder, act, l_act, bn, dropout)

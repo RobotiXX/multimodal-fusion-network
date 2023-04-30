@@ -158,10 +158,10 @@ class ResBlock(nn.Module):
 
 class Asymm_3d_spconv(nn.Module):
     def __init__(self,
-                 output_shape,
+                 output_shape = [480, 360, 32],
                  use_norm=True,
-                 num_input_features=128,
-                 nclasses=20, n_height=32, strict=False, init_size=16):
+                 num_input_features=16,
+                 nclasses=20, n_height=32, strict=False, init_size=32):
         super(Asymm_3d_spconv, self).__init__()
         self.nclasses = nclasses
         self.nheight = n_height

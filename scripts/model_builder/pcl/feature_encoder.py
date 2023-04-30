@@ -5,7 +5,12 @@ import torch_scatter
 
 
 class FeatureEncoder(nn.Module):
-    def __init__(self , grid_size, output_feat_dim = 64, feat_dim = 9):        
+    def __init__(
+            self , 
+            grid_size = [480, 360, 32], 
+            output_feat_dim = 256, 
+            feat_dim = 9
+        ):        
         super(FeatureEncoder, self).__init__()
 
         self.feat_encoder = nn.Sequential(
