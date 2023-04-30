@@ -4,10 +4,11 @@ import torch
 import torch.nn as nn
 from torchvision.models import resnet18, ResNet18_Weights
 
-from model_builder.backbone import get_backbone, make_mlp
+from backbone_cloud import Asymm_3d_spconv
+from ..image.backbone import make_mlp
 
 
-class BCModel(nn.Module):
+class BCModelPcl(nn.Module):
     def __init__(
         self,
         backbone: str = "resnet18",
@@ -21,21 +22,21 @@ class BCModel(nn.Module):
     ):
 
         super().__init__()
-        self.backbone = get_backbone(backbone, n_frames, n_channels)
+        self.backbone = Asymm_3d_spconv(backbone, n_frames, n_channels)
         self.controller = make_mlp(controller_encoder, act, l_act, bn, dropout)
         self.goal_encoder = make_mlp(goal_encoder, act, l_act, bn, dropout)
         self.prev_cmd_encoder = make_mlp(prev_cmd_encoder, act, l_act, bn, dropout)
 
-    def forward(self, stacked_images, local_goal, prev_cmd_vel):
+    def forward(self, voxel_features, coors, local_goal, prev_cmd_vel, batch_size):
         # print(f"{img.stacked_images = }")
         # image features in shape (B, 512)
-        imgs = self.backbone(stacked_images)
+        point_cloud = self.backbone(voxel_features, coors, batch_size)
         # goal features in shape (B, 128)
         goal = self.goal_encoder(local_goal)
         # prec_cmd_vel features in shape (B, 128)
         prev_cmd = self.prev_cmd_encoder(prev_cmd_vel)
         # concat all encoded features together along the last dim,
         # making a tensor of shape (B, 512 + 128 + 128) = (B, 768)
-        features = torch.cat([imgs, goal, prev_cmd], dim=-1)
+        features = torch.cat([point_cloud, goal, prev_cmd], dim=-1)
         # return the action in shape (B, 2)
         return self.controller(features)

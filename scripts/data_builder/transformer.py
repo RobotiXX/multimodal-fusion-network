@@ -47,12 +47,13 @@ class ApplyTransformation(Dataset):
 
     def __getitem__(self, index):
         # Transform images
-        self.image_paths = self.input_data[index][0]
-        self.point_clouds = self.input_data[index][1]
-        self.local_goal = self.input_data[index][2]
-        self.prev_cmd_vel = self.input_data[index][3]        
-        self.robot_position  = self.input_data[index][4]
-        self.gt_cmd_vel = self.input_data[index][5]
+        data = self.input_data[index]
+        self.image_paths = data[0]
+        self.point_clouds = data[1]
+        self.local_goal = data[2]
+        self.prev_cmd_vel = data[3]        
+        self.robot_position  = data[4]
+        self.gt_cmd_vel = data[5]
         
 
         images = [ self.image_transforms(read_images(path)) for path in self.image_paths]
@@ -66,7 +67,7 @@ class ApplyTransformation(Dataset):
         local_goal = (local_goal_in_robot_frame[0,0], local_goal_in_robot_frame[1,0])
 
         # Transform point-clouds to 3D-Cylider co-ordinate system
-        point_clouds = np.concatenate(self.point_clouds)
+        point_clouds = np.concatenate(self.point_clouds, axis=0)   
 
         # TODO: subsample the point clouds to keep a fixed number of points across frames
         xyz_polar = cart2polar(point_clouds)
@@ -92,11 +93,14 @@ class ApplyTransformation(Dataset):
         return_xyz = xyz_polar - voxel_centers
         transformed_pcl = np.concatenate((return_xyz, xyz_polar, point_clouds[:, :2]), axis=1)
 
+         
+
         local_goal = torch.tensor(local_goal, dtype=torch.float32).ravel()
         local_goal = (local_goal - local_goal.min()) / (local_goal.max() - local_goal.min())
 
         prev_cmd_vel = torch.tensor(self.prev_cmd_vel, dtype=torch.float32).ravel()
         gt_cmd_vel = torch.tensor(self.gt_cmd_vel, dtype=torch.float32).ravel()
+
 
         return (stacked_images, torch.tensor(grid_index), torch.tensor(transformed_pcl), local_goal, prev_cmd_vel, gt_cmd_vel)
 
