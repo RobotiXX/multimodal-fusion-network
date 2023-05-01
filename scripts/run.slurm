@@ -22,19 +22,27 @@ module load gnu10
 
 module load python
 
-module load cuda/10.2
+module load spack
+
+spack install gcc@10.0.0
+
+spack load gcc@10.0.0
+
+module load cuda/11.3
 
 python -m venv mlp
 
 source activate ~/mlp/bin/activate
 
-pip install torch==1.12.1+cu102 torchvision==0.13.1+cu102 torchaudio==0.12.1 --extra-index-url https://download.pytorch.org/whl/cu102
+pip install torch==1.12.0+cu113 torchvision==0.13.0+cu113 torchaudio==0.12.0 --extra-index-url https://download.pytorch.org/whl/cu113
 
 pip install torch-scatter
 
 pip install coloredlogs
 
-pip install spconv-cu102
+pip install spconv-cu113
+
+pip install opencv-python
 
 cd /home/bpanigr/Research/fusion-network/scripts
 

@@ -4,10 +4,10 @@ import torch
 import torch.nn as nn
 from torchvision.models import resnet18, ResNet18_Weights
 
-from backbone import Backbone
+from .backbone import Backbone
 from ..image.backbone import make_mlp
-from feature_encoder import FeatureEncoder
-from spconv import Asymm_3d_spconv
+from .feature_encoder import FeatureEncoder
+from .spconv import Asymm_3d_spconv
 
 
 class BCModelPcl(nn.Module):
