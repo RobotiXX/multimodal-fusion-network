@@ -1,7 +1,7 @@
 import torch
-from data_builder.indexer import IndexDataset
-from data_builder.transformer import ApplyTransformation
-from model_builder.image.net import BCModel
+from .data_builder.indexer import IndexDataset
+from .data_builder.transformer import ApplyTransformation
+from .model_builder.image.net import BCModel
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 

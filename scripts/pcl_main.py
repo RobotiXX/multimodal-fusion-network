@@ -1,3 +1,4 @@
+print("Executing")
 import torch
 from data_builder.indexer import IndexDataset
 from data_builder.transformer import ApplyTransformation
@@ -6,6 +7,7 @@ from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
+
 
 
 root = '/Users/bhabaranjanpanigrahi/Research/Code/fusion-network/recorded-data/136021.bag'
