@@ -1,10 +1,9 @@
-print("Executing")
 import torch
 from data_builder.indexer import IndexDataset
 from data_builder.transformer import ApplyTransformation
 from model_builder.pcl.net import BCModelPcl
 from torch.utils.data import DataLoader
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -46,4 +45,4 @@ for epoch in range(10):
 
     print(f'epoch is: {epoch} and error is: {sum(running_loss)/len(running_loss)}')
 
-plt.plot(range(10),running_loss[:10])
+# plt.plot(range(10),running_loss[:10])

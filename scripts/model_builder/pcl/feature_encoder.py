@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch_scatter
+from torch_scatter import scatter_max
 
 
 class FeatureEncoder(nn.Module):
