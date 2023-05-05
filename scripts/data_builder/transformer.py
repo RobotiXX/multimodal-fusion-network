@@ -69,40 +69,41 @@ class ApplyTransformation(Dataset):
         # Transform point-clouds to 3D-Cylider co-ordinate system
         point_clouds = np.concatenate(self.point_clouds, axis=0)   
 
+        # point_clouds = point_clouds[-25000, :]
         # TODO: subsample the point clouds to keep a fixed number of points across frames
-        xyz_polar = cart2polar(point_clouds)
+        # xyz_polar = cart2polar(point_clouds)
 
-        max_bound_r = np.percentile(xyz_polar[:, 0], 100, axis=0)
-        min_bound_r = np.percentile(xyz_polar[:, 0], 0, axis=0)
+        # max_bound_r = np.percentile(xyz_polar[:, 0], 100, axis=0)
+        # min_bound_r = np.percentile(xyz_polar[:, 0], 0, axis=0)
 
-        max_bound = np.max(xyz_polar[:, 1:], axis=0)
-        min_bound = np.min(xyz_polar[:, 1:], axis=0)
+        # max_bound = np.max(xyz_polar[:, 1:], axis=0)
+        # min_bound = np.min(xyz_polar[:, 1:], axis=0)
 
-        max_bound = np.concatenate(([max_bound_r],max_bound))
-        min_bound = np.concatenate(([min_bound_r], min_bound))
+        # max_bound = np.concatenate(([max_bound_r],max_bound))
+        # min_bound = np.concatenate(([min_bound_r], min_bound))
 
-        range_to_crop = max_bound - min_bound
-        cur_grid_size = (self.grid_size - 1)
-        intervals = range_to_crop / cur_grid_size
+        # range_to_crop = max_bound - min_bound
+        # cur_grid_size = (self.grid_size - 1)
+        # intervals = range_to_crop / cur_grid_size
 
-        if (intervals == 0).any(): print("Zero interval!")
-        grid_index = (np.floor(( np.clip(xyz_polar, min_bound, max_bound) - min_bound) / intervals)).astype(int)
+        # if (intervals == 0).any(): print("Zero interval!")
+        # grid_index = (np.floor(( np.clip(xyz_polar, min_bound, max_bound) - min_bound) / intervals)).astype(int)
         
-        # Center data around each voxel for PTnet
-        voxel_centers = (grid_index.astype(np.float32) + 0.5) * intervals + min_bound
-        return_xyz = xyz_polar - voxel_centers
-        transformed_pcl = np.concatenate((return_xyz, xyz_polar, point_clouds[:, :2]), axis=1)
-
-         
-
+        # # Center data around each voxel for PTnet
+        # voxel_centers = (grid_index.astype(np.float32) + 0.5) * intervals + min_bound
+        # return_xyz = xyz_polar - voxel_centers
+        # transformed_pcl = np.concatenate((return_xyz, xyz_polar, point_clouds[:, :2]), axis=1)
+        
         local_goal = torch.tensor(local_goal, dtype=torch.float32).ravel()
         local_goal = (local_goal - local_goal.min()) / (local_goal.max() - local_goal.min())
 
         prev_cmd_vel = torch.tensor(self.prev_cmd_vel, dtype=torch.float32).ravel()
         gt_cmd_vel = torch.tensor(self.gt_cmd_vel, dtype=torch.float32).ravel()
 
+        point_clouds =  torch.tensor(point_clouds)
+        point_clouds = torch.t(point_clouds)
 
-        return (stacked_images, torch.tensor(grid_index), torch.tensor(transformed_pcl), local_goal, prev_cmd_vel, gt_cmd_vel)
+        return (stacked_images, point_clouds, local_goal, prev_cmd_vel, gt_cmd_vel)
 
 
 
