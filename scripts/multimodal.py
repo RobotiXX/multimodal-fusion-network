@@ -18,6 +18,7 @@ running_loss = []
 loss = torch.nn.MSELoss()
 model = BCModelPcl().to(device)
 optim = torch.optim.Adam(model.parameters(), lr=0.001)
+epoc_error = []
 
 for epoch in range(10):
     for index, (stacked_images, pcl ,local_goal, prev_cmd_vel, gt_cmd_vel) in enumerate(train_loader):
@@ -36,11 +37,14 @@ for epoch in range(10):
         error.backward()
         optim.step()
 
-        print(f'step is: {index} and error is: {error.item()}')
+        print(f'step is:   {index} and error is:   {error.item()} \n')
 
         running_loss.append(error.item())
 
-    print(f'epoch is: {epoch} and error is: {sum(running_loss)/len(running_loss)}')
+    error_at_epoch = sum(running_loss)/len(running_loss)
+    epoc_error.append(error_at_epoch)
+    print(f'================== epoch is: {epoch} and error is: {error_at_epoch}==================\n')
 
-# plt.plot(range(10),running_loss[:10])
+plt.plot(range(10),epoc_error[:10])
+plt.show()
 
