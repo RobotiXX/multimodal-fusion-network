@@ -86,7 +86,7 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
                 optim.zero_grad()
                 error.backward()
                 optim.step()
-
+        
                 print(f'step is:   {index} and error is:   {error.item()} \n')
                 running_loss.append(error.item())
 

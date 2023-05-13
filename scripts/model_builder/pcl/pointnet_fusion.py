@@ -40,7 +40,7 @@ class PointNetDenseFusionModel(nn.Module):
         # x = x.transpose(2,1).contiguous()
         # x = F.log_softmax(x.view(-1,self.k), dim=-1)
         x = x.contiguous().view(batchsize, -1)
-        # cv2 = cv2.contiguous().view(batchsize, -1)
-        # cv3 = cv3.contiguous().view(batchsize, -1)
+        cv2 = cv2.contiguous().view(batchsize, -1)
+        cv3 = cv3.contiguous().view(batchsize, -1)
 
         return x, (cv2, cv3)
