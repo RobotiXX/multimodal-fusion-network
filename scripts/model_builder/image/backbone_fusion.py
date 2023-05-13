@@ -8,10 +8,10 @@ from .backbone import get_backbone
 from collections import OrderedDict
 
 
-class BCModel(nn.Module):
+class ImageFusionModel(nn.Module):
     def __init__(
         self,
-        output_layers = [4,5,6,7],
+        output_layers = [5,6],
         backbone: str = "resnet18",
         n_frames: int = 4,
         n_channels: int = 3,
