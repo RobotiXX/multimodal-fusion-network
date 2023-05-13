@@ -4,16 +4,16 @@ import torch
 import torch.nn as nn
 from torchvision.models import resnet18, ResNet18_Weights
 
-from backbone import get_backbone, make_mlp
+from .backbone import get_backbone, make_mlp
 
 
 class BCModel(nn.Module):
     def __init__(
         self,
         backbone: str = "resnet18",
-        controller_encoder: list = [768, 256, 128, 64, 2],
+        controller_encoder: list = [768, 64, 2],
         goal_encoder: list = [2, 256, 128],
-        prev_cmd_encoder: list = [2 * 18, 64, 128],
+        prev_cmd_encoder: list = [2 * 20, 64, 128],
         n_frames: int = 4,
         n_channels: int = 3,
         act: str = 'relu',

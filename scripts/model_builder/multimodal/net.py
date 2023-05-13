@@ -12,7 +12,7 @@ class BCModelPcl(nn.Module):
         self,        
         backbone_img: str = "resnet18",
         sparse_shape = [480, 360, 32],
-        controller_encoder: list = [(198256+512), 64, 2],
+        controller_encoder: list = [(198256+512), 128, 64, 32, 2],
         goal_encoder: list = [2, 256, 128],
         prev_cmd_encoder: list = [2 * 20, 64, 128],
         n_frames: int = 4,

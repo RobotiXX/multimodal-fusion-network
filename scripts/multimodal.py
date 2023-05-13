@@ -28,37 +28,39 @@ def get_data_loader(input_file_path, read_type, batch_size):
 
 # root = '/Users/bhabaranjanpanigrahi/Research/Code/fusion-network/recorded-data/136021.bag'
 
-root_val = '/home/ranjan/Workspace/fusion-network/recorded-data/val/138139'
+# root_val = '/home/ranjan/Workspace/fusion-network/recorded-data/val/138139'
 
-val_indexer = IndexDataset(root_val)
-val_dataset = ApplyTransformation(val_indexer)
-val_loader = DataLoader(val_dataset, batch_size=24, drop_last=True)
+# val_indexer = IndexDataset(root_val)
+# val_dataset = ApplyTransformation(val_indexer)
+# val_loader = DataLoader(val_dataset, batch_size=24, drop_last=True)
 
 
-def run_validation(val_loader, model):
+def run_validation(val_files, model, batch_size):
        print("Running Validation..\n")
        val_error = []
        loss = torch.nn.MSELoss()
        with torch.no_grad():
-        for index, (stacked_images, pcl ,local_goal, prev_cmd_vel, gt_cmd_vel) in tqdm(enumerate(val_loader)):
-            stacked_images = stacked_images.to(device)
-            pcl = pcl.to(device)
-            local_goal= local_goal.to(device)
-            prev_cmd_vel= prev_cmd_vel.to(device)
-            gt_cmd_vel= gt_cmd_vel.to(device)
-            pred_cmd_vel = model(pcl, stacked_images, local_goal, prev_cmd_vel)
-            error = loss(pred_cmd_vel, gt_cmd_vel)
-            error_to_number = error.item()
-            val_error.append(error_to_number)
+        for val_file in val_files:        
+            val_loader = get_data_loader( val_file, 'validation', batch_size = batch_size )
+            for index, (stacked_images, pcl ,local_goal, prev_cmd_vel, gt_cmd_vel) in tqdm(enumerate(val_loader)):
+                stacked_images = stacked_images.to(device)
+                pcl = pcl.to(device)
+                local_goal= local_goal.to(device)
+                prev_cmd_vel= prev_cmd_vel.to(device)
+                gt_cmd_vel= gt_cmd_vel.to(device)
+                pred_cmd_vel = model(pcl, stacked_images, local_goal, prev_cmd_vel)
+                error = loss(pred_cmd_vel, gt_cmd_vel)
+                error_to_number = error.item()
+                val_error.append(error_to_number)
 
         running_loss = sum(val_error)/len(val_error)
 
-        print(f' =======> Average Validation error is:   {running_loss} \n')
+        print(f'Average Validation error is:   {running_loss} \n')
         return running_loss
             
 
 
-def run_training(train_files, batch_size, num_epochs):
+def run_training(train_files, val_dirs, batch_size, num_epochs):
     loss = torch.nn.MSELoss()
     model = BCModelPcl().to(device)
     error_at_epoch = []
@@ -91,7 +93,7 @@ def run_training(train_files, batch_size, num_epochs):
         avg_error_at_epoch = sum(running_loss)/len(running_loss)
         error_at_epoch.append(avg_error_at_epoch)
         print(f'================== epoch is: {epoch} and error is: {error_at_epoch}==================\n')
-        val_error_at_epoch.append(run_validation(val_loader, model))
+        val_error_at_epoch.append(run_validation(val_dirs, model, batch_size))
 
     torch.save(model.state_dict(), "saved_model.pth")
     plt.plot(range(len(error_at_epoch)),error_at_epoch,'-',color='g', label= 'Training')
@@ -103,9 +105,10 @@ def run_training(train_files, batch_size, num_epochs):
 
 def main():
     train_dirs = [ os.path.join('../recorded-data/train', dir) for dir in os.listdir('../recorded-data/train')]
-    batch_size = 24
-    epochs = 10
-    run_training(train_dirs, batch_size, epochs)
+    val_dirs = [ os.path.join('../recorded-data/val', dir) for dir in os.listdir('../recorded-data/val')]
+    batch_size = 16
+    epochs = 25
+    run_training(train_dirs, val_dirs, batch_size, epochs)
 
 
 
