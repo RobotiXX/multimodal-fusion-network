@@ -34,16 +34,6 @@ def get_data_loader(input_file_path, read_type, batch_size):
     return data_loader
 
 
-
-# root = '/Users/bhabaranjanpanigrahi/Research/Code/fusion-network/recorded-data/136021.bag'
-
-# root_val = '/home/ranjan/Workspace/fusion-network/recorded-data/val/138139'
-
-# val_indexer = IndexDataset(root_val)
-# val_dataset = ApplyTransformation(val_indexer)
-# val_loader = DataLoader(val_dataset, batch_size=24, drop_last=True)
-
-
 def run_validation(val_files, model, batch_size):
        print("Running Validation..\n")
        val_error = []
@@ -61,7 +51,7 @@ def run_validation(val_files, model, batch_size):
                 error_fusion = loss(pred_fusion, gt_cmd_vel)
                 error_img = loss(pred_img, gt_cmd_vel)
                 error_pcl = loss(pred_pcl, gt_cmd_vel)
-                error_total = error_fusion + ( 0.5 * error_img) + (0.5 * error_pcl)
+                error_total = error_fusion + ( 0.25 * error_img) + (0.75 * error_pcl)
                 error_to_number = error_total.item()
                 val_error.append(error_to_number)
 
@@ -94,18 +84,19 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
 
                 pred_fusion, pred_img, pred_pcl  = model(stacked_images, pcl, local_goal, prev_cmd_vel)
                 # print(f"{pred_cmd_vel.shape = }")
+                # print(pred_fusion, gt_cmd_vel)
                 error_fusion = loss(pred_fusion, gt_cmd_vel)
                 error_img = loss(pred_img, gt_cmd_vel)
                 error_pcl = loss(pred_pcl, gt_cmd_vel)
-                error_total = error_fusion + ( 0.5 * error_img) + (0.5 * error_pcl)
+                error_total = error_fusion + ( 0.25 * error_img) + (0.75 * error_pcl)
                 optim.zero_grad()
                 error_total.backward()
                 optim.step()
                
                 print(f'step is:   {index} and total error is:   {error_total.item()}  image: {error_img.item()}  pcl: {error_pcl.item()} fusion: {error_fusion.item()}\n')
-                experiment.log_metric(name = str(train_file.split('/')[-1]+'_img'), value=error_img.item())
-                experiment.log_metric(name = str(train_file.split('/')[-1]+'_pcl'), value=error_pcl.item())
-                experiment.log_metric(name = str(train_file.split('/')[-1]+'_fusion'), value=error_fusion.item())
+                experiment.log_metric(name = str(train_file.split('/')[-1]+ " mod:" +'img'), value=error_img.item())
+                experiment.log_metric(name = str(train_file.split('/')[-1]+" mod:" +'pcl'), value=error_pcl.item())
+                experiment.log_metric(name = str(train_file.split('/')[-1]+" mod:" +'fusion'), value=error_fusion.item())
                 running_loss.append(error_total.item())
 
         avg_error_at_epoch = sum(running_loss)/len(running_loss)
