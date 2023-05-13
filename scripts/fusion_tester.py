@@ -19,7 +19,6 @@ train_loader = DataLoader(train_dataset,batch_size=16, drop_last=True)
 running_loss = []
 loss = torch.nn.MSELoss()
 model = FusionModel().to(device)
-print(model)
 optim = torch.optim.Adam(model.parameters(), lr=0.001)
 
 for epoch in range(10):

@@ -4,10 +4,10 @@ import torch
 import torch.nn as nn
 import torch.nn.parallel
 import torch.utils.data
-from torch.autograd import Variabl
-import numpy as np
+# from torch.autograd import Variabl
+# import numpy as np
 import torch.nn.functional as F
-from pointnet import PointNetfeat
+from .pointnet import PointNetfeat
 
 
 class PointNetDenseFusionModel(nn.Module):

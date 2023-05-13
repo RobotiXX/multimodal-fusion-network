@@ -11,7 +11,7 @@ from collections import OrderedDict
 class ImageFusionModel(nn.Module):
     def __init__(
         self,
-        output_layers = [5,6],
+        output_layers = [5,6,7],
         backbone: str = "resnet18",
         n_frames: int = 4,
         n_channels: int = 3,
@@ -22,6 +22,7 @@ class ImageFusionModel(nn.Module):
 
         super().__init__()
         self.output_layers = output_layers
+        # print(backbone,n_frames,n_channels)
         self.backbone = get_backbone(backbone, n_frames, n_channels)
         self.selected_out = OrderedDict()
         self.fhooks = []

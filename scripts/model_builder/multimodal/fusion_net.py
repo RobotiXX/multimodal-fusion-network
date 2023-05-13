@@ -24,11 +24,11 @@ class FusionModel(nn.Module):
 
         super().__init__()
         self.backbone_pcl = PointNetDenseFusionModel().float()
-        self.backbone_img = ImageFusionModel(backbone_img, n_frames, n_channels)
+        self.backbone_img = ImageFusionModel(backbone=backbone_img, n_frames= n_frames, n_channels=n_channels)
         self.goal_encoder = make_mlp(goal_encoder, act, l_act, bn, dropout)
         self.prev_cmd_encoder = make_mlp(prev_cmd_encoder, act, l_act, bn, dropout)
 
-        self.controlle = make_mlp(controller_encoder, act, l_act, bn, dropout)
+        self.controller = make_mlp(controller_encoder, act, l_act, bn, dropout)
         self.controller_img = make_mlp(controller_encoder, act, l_act, bn, dropout)
         self.controller_pcl = make_mlp(controller_encoder, act, l_act, bn, dropout)
         
