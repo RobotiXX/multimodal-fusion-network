@@ -5,7 +5,7 @@ from data_builder.indexer import IndexDataset
 from data_builder.transformer import ApplyTransformation
 from model_builder.multimodal.fusion_net import BcFusionModel
 from torch.utils.data import DataLoader
-from tqdm import tqdm
+from tqdm.auto import tqdm
 import matplotlib.pyplot as plt
 import coloredlogs, logging
 from comet_ml import Experiment
@@ -57,7 +57,7 @@ def run_validation(val_files, model, batch_size):
                 experiment.log_metric(name = str(val_file.split('/')[-1]+'_fusion'), value=error_fusion.item())
         running_loss = sum(val_error)/len(val_error)
 
-        print(f'Average Validation error is:   {running_loss} \n')
+        print(f'=========================> Average Validation error is:   {running_loss} \n')
         return running_loss
             
 
@@ -71,8 +71,10 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
     
     for epoch in range(num_epochs):   
         running_loss = []
+        num_files = 0
         for train_file in train_files:        
-            train_loader = get_data_loader( train_file, 'train', batch_size = batch_size )            
+            train_loader = get_data_loader( train_file, 'train', batch_size = batch_size )   
+            num_files += 1         
             for index, (stacked_images, pcl ,local_goal, prev_cmd_vel, gt_cmd_vel) in enumerate(train_loader):
                 
                 stacked_images = stacked_images.to(device)
@@ -98,6 +100,10 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
                 experiment.log_metric(name = str(train_file.split('/')[-1]+" mod:" +'pcl'), value=error_pcl.item())
                 experiment.log_metric(name = str(train_file.split('/')[-1]+" mod:" +'fusion'), value=error_fusion.item())
                 running_loss.append(error_total.item())
+            
+            if num_files%4 == 0:  
+                print("Trined on 4 files..")              
+                run_validation(val_dirs, model, batch_size)
 
         avg_error_at_epoch = sum(running_loss)/len(running_loss)
         error_at_epoch.append(avg_error_at_epoch)
