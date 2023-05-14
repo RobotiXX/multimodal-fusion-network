@@ -17,8 +17,6 @@ experiment = Experiment(
     workspace="bhabaranjan",
 )
 
-
-
 coloredlogs.install()
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -30,7 +28,7 @@ def get_data_loader(input_file_path, read_type, batch_size):
     logging.info(f'Reading {read_type} file from path {input_file_path}')
     indexer = IndexDataset(input_file_path)
     transformer = ApplyTransformation(indexer)
-    data_loader = DataLoader(transformer, batch_size = batch_size, drop_last=True)
+    data_loader = DataLoader(transformer, batch_size = batch_size)
     return data_loader
 
 
@@ -54,7 +52,9 @@ def run_validation(val_files, model, batch_size):
                 error_total = error_fusion + ( 0.25 * error_img) + (0.75 * error_pcl)
                 error_to_number = error_total.item()
                 val_error.append(error_to_number)
-
+                experiment.log_metric(name = str(val_file.split('/')[-1]+'_img'), value=error_img.item())
+                experiment.log_metric(name = str(val_file.split('/')[-1]+'_pcl'), value=error_pcl.item())
+                experiment.log_metric(name = str(val_file.split('/')[-1]+'_fusion'), value=error_fusion.item())
         running_loss = sum(val_error)/len(val_error)
 
         print(f'Average Validation error is:   {running_loss} \n')
@@ -107,11 +107,7 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
         experiment.log_metric( name = "Avg Training loss", value = avg_error_at_epoch, epoch= epoch+1)
         experiment.log_metric( name = "Avg Validation loss", value = val_error, epoch= epoch+1)
 
-    # torch.save(model.state_dict(), "saved_model.pth")
-    plt.plot(range(len(error_at_epoch)),error_at_epoch,'-',color='g', label= 'Training')
-    plt.plot(range(len(val_error_at_epoch)),val_error_at_epoch,'--',color='r', label='Testing')
-    plt.legend(loc='upper left')
-    plt.show()
+    torch.save(model.state_dict(), "saved_model.pth")
 
 
 
@@ -120,8 +116,7 @@ def main():
     val_dirs = [ os.path.join('../recorded-data/val', dir) for dir in os.listdir('../recorded-data/val')]
     batch_size = 16
     epochs = 25
-    with experiment.train():
-        run_training(train_dirs, val_dirs, batch_size, epochs)
+    run_training(train_dirs, val_dirs, batch_size, epochs)
 
 
 

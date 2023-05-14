@@ -44,18 +44,14 @@ class BcFusionModel(nn.Module):
         
 
     def forward(self, stacked_images, pcl, local_goal, prev_cmd_vel):
-        # print(f"{img.stacked_images = }")
-        # image features in shape (B, 512)
+
+
         imgs_feat, intr_img_rep = self.backbone_img(stacked_images)
         point_cloud_feat, intr_pts_rep = self.backbone_pcl(pcl.float())
-        # goal features in shape (B, 128)
+        
         goal = self.goal_encoder(local_goal)
-        # prec_cmd_vel features in shape (B, 128)
-        # print(prev_cmd_vel.shape)
+        
         prev_cmd = self.prev_cmd_encoder(prev_cmd_vel)
-
-        # print("img_shape",imgs_feat.shape)
-        # print("pcl", point_cloud_feat.shape)
 
         pooled_lyr1_img = self.mx_pool_lyr2_img( intr_img_rep['layer2'] )
         pooled_lyr2_img = self.mx_pool_lyr3_img( intr_img_rep['layer3'] )
@@ -65,20 +61,16 @@ class BcFusionModel(nn.Module):
         pooled_lyr2_img = pooled_lyr2_img.contiguous().view(pooled_lyr2_img.shape[0], -1)
         pooled_lyr3_img = pooled_lyr3_img.contiguous().view(pooled_lyr3_img.shape[0], -1)
         
-        # print("representation:",intr_img_rep['layer2'].shape,intr_img_rep['layer3'].shape,intr_img_rep['layer4'].shape)
-        # print("pooled representation:",pooled_lyr1_img.shape,pooled_lyr2_img.shape,pooled_lyr3_img.shape)
 
         pooled_lyr1_pcl = self.mx_pool_lyr1_pcl(intr_pts_rep[0])
         pooled_lyr2_pcl = self.mx_pool_lyr2_pcl(intr_pts_rep[1])
         pooled_lyr3_pcl = self.mx_pool_lyr3_pcl(point_cloud_feat)
 
-        # print(pooled_lyr1_pcl.shape,pooled_lyr2_pcl.shape,pooled_lyr3_pcl.shape)
 
         fusion_input1 = torch.cat([pooled_lyr1_img, pooled_lyr1_pcl], dim=1)
         fusion_input2 = torch.cat([pooled_lyr2_img, pooled_lyr2_pcl], dim=1)
         fusion_input3 = torch.cat([pooled_lyr3_img, pooled_lyr3_pcl], dim=1)
 
-        # print(fusion_input1.shape,fusion_input2.shape,fusion_input3.shape)
 
         predict_fusion_model  = self.fusion_mlp(fusion_input1, fusion_input2, fusion_input3, goal, prev_cmd)
 
@@ -89,5 +81,4 @@ class BcFusionModel(nn.Module):
         predict_pcl_model = self.controller_pcl(input_pcl_features)
 
 
-        # return the action in shape (B, 2)
         return predict_fusion_model, predict_img_model, predict_pcl_model
