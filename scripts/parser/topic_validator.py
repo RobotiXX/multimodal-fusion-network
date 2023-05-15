@@ -20,16 +20,16 @@ def check_topics_in_rosbag(rosbag_file, topics):
     return missing_topics
 
 # Example usage
-bagfile_location = "/Users/bhabaranjanpanigrahi/Research/Code/fusion-network/bagfiles"
+bagfile_location = "/home/ranjan/Workspace/fusion-network/bagfiles"
 topics = ['/odom', '/image_raw/compressed', '/velodyne_points']
 
 
 for path in os.listdir(bagfile_location):
-    missing_topics = check_topics_in_rosbag(path, topics)
+    missing_topics = check_topics_in_rosbag(os.path.join(bagfile_location,path), topics)
 
     if len(missing_topics) == 0:
-        print("All topics are present in the ROS bag file.")
+        print(f"All topics are present in the ROS bag file: {path}")
     else:
-        print("Missing topics in the ROS bag file:")
+        print(f"Missing topics in the ROS bag file: {path}")
         for topic in missing_topics:
             print(topic)

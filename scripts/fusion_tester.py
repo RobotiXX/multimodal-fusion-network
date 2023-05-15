@@ -52,9 +52,9 @@ def run_validation(val_files, model, batch_size):
                 error_total = error_fusion + ( 0.25 * error_img) + (0.75 * error_pcl)
                 error_to_number = error_total.item()
                 val_error.append(error_to_number)
-                experiment.log_metric(name = str(val_file.split('/')[-1]+'_img'), value=error_img.item())
-                experiment.log_metric(name = str(val_file.split('/')[-1]+'_pcl'), value=error_pcl.item())
-                experiment.log_metric(name = str(val_file.split('/')[-1]+'_fusion'), value=error_fusion.item())
+                experiment.log_metric(name = str('val_'+val_file.split('/')[-1]+'_img'), value=error_img.item())
+                experiment.log_metric(name = str('val_'+val_file.split('/')[-1]+'_pcl'), value=error_pcl.item())
+                experiment.log_metric(name = str('val_'+val_file.split('/')[-1]+'_fusion'), value=error_fusion.item())
         running_loss = sum(val_error)/len(val_error)
 
         print(f'=========================> Average Validation error is:   {running_loss} \n')
@@ -67,7 +67,7 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
     model = BcFusionModel().to(device)
     error_at_epoch = []
     val_error_at_epoch = []
-    optim = torch.optim.Adam(model.parameters(), lr=0.0001) 
+    optim = torch.optim.Adam(model.parameters(), lr=0.001) 
     
     for epoch in range(num_epochs):   
         running_loss = []
@@ -102,7 +102,7 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
                 running_loss.append(error_total.item())
             
             if num_files%4 == 0:  
-                print("Trined on 4 files..")              
+                print("After trained on 4 files..")              
                 run_validation(val_dirs, model, batch_size)
 
         avg_error_at_epoch = sum(running_loss)/len(running_loss)

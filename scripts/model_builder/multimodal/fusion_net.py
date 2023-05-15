@@ -51,6 +51,7 @@ class BcFusionModel(nn.Module):
         
         goal = self.goal_encoder(local_goal)
         
+        # print(prev_cmd_vel.shape)
         prev_cmd = self.prev_cmd_encoder(prev_cmd_vel)
 
         pooled_lyr1_img = self.mx_pool_lyr2_img( intr_img_rep['layer2'] )
