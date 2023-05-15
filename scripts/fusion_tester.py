@@ -9,6 +9,7 @@ from tqdm.auto import tqdm
 import matplotlib.pyplot as plt
 import coloredlogs, logging
 from comet_ml import Experiment
+from torch.optim.lr_scheduler import MultiStepLR
 
 # Create an experiment with your api key
 experiment = Experiment(
@@ -67,11 +68,13 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
     model = BcFusionModel().to(device)
     error_at_epoch = []
     val_error_at_epoch = []
-    optim = torch.optim.Adam(model.parameters(), lr=0.001) 
-    
+    optim = torch.optim.Adam(model.parameters(), lr=0.1) 
+    scheduler = MultiStepLR(optim, milestones=[6,15,25], gamma=0.5)
+
     for epoch in range(num_epochs):   
         running_loss = []
         num_files = 0
+        lr = scheduler.get_last_lr()
         for train_file in train_files:        
             train_loader = get_data_loader( train_file, 'train', batch_size = batch_size )   
             num_files += 1         
@@ -104,7 +107,8 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
             if num_files%4 == 0:  
                 print("After trained on 4 files..")              
                 run_validation(val_dirs, model, batch_size)
-
+        
+        scheduler.step()
         avg_error_at_epoch = sum(running_loss)/len(running_loss)
         error_at_epoch.append(avg_error_at_epoch)
         print(f'================== epoch is: {epoch} and error is: {error_at_epoch}==================\n')
@@ -112,8 +116,8 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
         val_error_at_epoch.append(val_error)
         experiment.log_metric( name = "Avg Training loss", value = avg_error_at_epoch, epoch= epoch+1)
         experiment.log_metric( name = "Avg Validation loss", value = val_error, epoch= epoch+1)
-
-    torch.save(model.state_dict(), "saved_model.pth")
+        experiment.log_metric( name = "Learning Rate Decay", value = lr, epoch= epoch+1)
+    torch.save(model.state_dict(), "saved_fusion_model.pth")
 
 
 
