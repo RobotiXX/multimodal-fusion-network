@@ -84,13 +84,13 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
     model = BcFusionModel().to(device)
     error_at_epoch = []
     val_error_at_epoch = []
-    optim = torch.optim.Adam(model.parameters(), lr=0.1) 
-    scheduler = MultiStepLR(optim, milestones=[1,2,4], gamma=0.1)
+    optim = torch.optim.Adagrad(model.parameters(), lr=0.001) 
+    # scheduler = MultiStepLR(optim, milestones=[1,2,4], gamma=0.1)
     epoch_loss = []
     for epoch in range(num_epochs):
         num_files = 0
-        lr = scheduler.get_last_lr()
-        experiment.log_metric( name = "Learning Rate Decay", value = lr, epoch= epoch+1)
+        # lr = scheduler.get_last_lr()
+        # experiment.log_metric( name = "Learning Rate Decay", value = lr, epoch= epoch+1)
         running_loss = []
         for train_file in train_files:        
             train_loader = get_data_loader( train_file, 'train', batch_size = batch_size )   
@@ -137,7 +137,7 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
                 print("After trained on 6 files..")              
                 run_validation(val_dirs, model, batch_size, epoch)
         
-        scheduler.step()
+        # scheduler.step()
         
 
         epoch_loss.append(np.average(running_loss))                
