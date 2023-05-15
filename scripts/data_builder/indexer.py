@@ -49,7 +49,7 @@ class IndexDataset(Dataset):
             for point in self.content[point_snapshot]['point_cloud']:
                 if (point[0]**2 + point[1]**2 + point[2]**2) <= 26:
                     filtered_points.append(point)
-            point_clouds.append(filtered_points[:5200])                
+            point_clouds.append(filtered_points[:5500])                
 
 
         return (image_paths, point_clouds, local_goal, prev_cmd_vel, robot_position, gt_cmd_vel)

@@ -20,7 +20,7 @@ def check_topics_in_rosbag(rosbag_file, topics):
     return missing_topics
 
 # Example usage
-bagfile_location = "/home/ranjan/Workspace/fusion-network/bagfiles"
+bagfile_location = "../../bagfiles"
 topics = ['/odom', '/image_raw/compressed', '/velodyne_points']
 
 
