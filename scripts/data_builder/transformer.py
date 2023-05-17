@@ -32,13 +32,6 @@ def cart2polar(xyz):
 
 class ApplyTransformation(Dataset):
     def __init__(self, input_data, grid_size = [72, 30, 30]):
-        # input (image_paths, point_clouds, local_goal, prev_cmd_vel, robot_position, gt_cmd_vel)
-        # self.image_paths = input_data[0]
-        # self.point_clouds = input_data[1]
-        # self.local_goal = input_data[2]
-        # self.prev_cmd_vel = input_data[3]        
-        # self.robot_position  = input_data[4]
-        # self.gt_cmd_vel = input_data[5]
         self.grid_size = np.asarray(grid_size)  
         self.input_data = input_data    
         self.image_transforms = transforms.Compose([
@@ -54,12 +47,13 @@ class ApplyTransformation(Dataset):
 
     def __getitem__(self, index):
         # Transform images
-        self.image_paths = self.input_data[index][0]
-        self.point_clouds = self.input_data[index][1]
-        self.local_goal = self.input_data[index][2]
-        self.prev_cmd_vel = self.input_data[index][3]        
-        self.robot_position  = self.input_data[index][4]
-        self.gt_cmd_vel = self.input_data[index][5]
+        data = self.input_data[index]
+        self.image_paths = data[0]
+        self.point_clouds = data[1]
+        self.local_goal = data[2]
+        self.prev_cmd_vel = data[3]        
+        self.robot_position  = data[4]
+        self.gt_cmd_vel = data[5]
         
 
         images = [ self.image_transforms(read_images(path)) for path in self.image_paths]
@@ -73,42 +67,43 @@ class ApplyTransformation(Dataset):
         local_goal = (local_goal_in_robot_frame[0,0], local_goal_in_robot_frame[1,0])
 
         # Transform point-clouds to 3D-Cylider co-ordinate system
-        point_clouds = np.concatenate(self.point_clouds)
+        point_clouds = np.concatenate(self.point_clouds, axis=0)   
 
+        # point_clouds = point_clouds[-25000, :]
         # TODO: subsample the point clouds to keep a fixed number of points across frames
-        xyz_polar = cart2polar(point_clouds)
+        # xyz_polar = cart2polar(point_clouds)
 
-        max_bound_r = np.percentile(xyz_polar[:, 0], 100, axis=0)
-        min_bound_r = np.percentile(xyz_polar[:, 0], 0, axis=0)
+        # max_bound_r = np.percentile(xyz_polar[:, 0], 100, axis=0)
+        # min_bound_r = np.percentile(xyz_polar[:, 0], 0, axis=0)
 
-        max_bound = np.max(xyz_polar[:, 1:], axis=0)
-        min_bound = np.min(xyz_polar[:, 1:], axis=0)
+        # max_bound = np.max(xyz_polar[:, 1:], axis=0)
+        # min_bound = np.min(xyz_polar[:, 1:], axis=0)
 
-        max_bound = np.concatenate(([max_bound_r],max_bound))
-        min_bound = np.concatenate(([min_bound_r], min_bound))
+        # max_bound = np.concatenate(([max_bound_r],max_bound))
+        # min_bound = np.concatenate(([min_bound_r], min_bound))
 
-        range_to_crop = max_bound - min_bound
-        cur_grid_size = (self.grid_size - 1)
-        intervals = range_to_crop / cur_grid_size
+        # range_to_crop = max_bound - min_bound
+        # cur_grid_size = (self.grid_size - 1)
+        # intervals = range_to_crop / cur_grid_size
 
-        if (intervals == 0).any(): print("Zero interval!")
-        grid_index = (np.floor(( np.clip(xyz_polar, min_bound, max_bound) - min_bound) / intervals)).astype(int)
+        # if (intervals == 0).any(): print("Zero interval!")
+        # grid_index = (np.floor(( np.clip(xyz_polar, min_bound, max_bound) - min_bound) / intervals)).astype(int)
         
-        # Center data around each voxel for PTnet
-        voxel_centers = (grid_index.astype(np.float32) + 0.5) * intervals + min_bound
-        return_xyz = xyz_polar - voxel_centers
-        transformed_pcl = np.concatenate((return_xyz, xyz_polar, point_clouds[:, :2]), axis=1)
-
-        point_cloud_transformed = (grid_index, transformed_pcl)
-
+        # # Center data around each voxel for PTnet
+        # voxel_centers = (grid_index.astype(np.float32) + 0.5) * intervals + min_bound
+        # return_xyz = xyz_polar - voxel_centers
+        # transformed_pcl = np.concatenate((return_xyz, xyz_polar, point_clouds[:, :2]), axis=1)
+        
         local_goal = torch.tensor(local_goal, dtype=torch.float32).ravel()
         local_goal = (local_goal - local_goal.min()) / (local_goal.max() - local_goal.min())
 
         prev_cmd_vel = torch.tensor(self.prev_cmd_vel, dtype=torch.float32).ravel()
         gt_cmd_vel = torch.tensor(self.gt_cmd_vel, dtype=torch.float32).ravel()
 
+        point_clouds =  torch.tensor(point_clouds)
+        point_clouds = torch.t(point_clouds)
 
-        return (stacked_images, local_goal, prev_cmd_vel, gt_cmd_vel)
+        return (stacked_images, point_clouds, local_goal, prev_cmd_vel, gt_cmd_vel)
 
 
 
