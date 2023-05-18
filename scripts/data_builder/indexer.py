@@ -44,10 +44,11 @@ class IndexDataset(Dataset):
         
         # only keep points that are under 5 + 1 (delta) meters from the robot
         point_clouds = []
+        # print(list(self.content.keys()), start_index, end_index)
         for point_snapshot in range(start_index, end_index+1):
             filtered_points = []
             for point in self.content[point_snapshot]['point_cloud']:
-                if (point[0]**2 + point[1]**2 + point[2]**2) <= 26:
+                if (point[0]**2 + point[1]**2 + point[2]**2) <= 49:
                     filtered_points.append(point)
             point_clouds.append(filtered_points[:5500])                
 
