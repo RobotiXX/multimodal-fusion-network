@@ -81,7 +81,12 @@ def run_validation(val_files, model, batch_size, epoch):
 
 def run_training(train_files, val_dirs, batch_size, num_epochs):
     loss = torch.nn.MSELoss()
-    model = BcFusionModel().to(device)
+    model = BcFusionModel()
+    saved_model = './saved_fusion_model.pth'
+    if os.path.exists(saved_model):
+        print(f"===========> loading model from: {saved_model}")
+        model.load_state_dict(torch.load(saved_model))
+    model.to(device)
     error_at_epoch = []
     val_error_at_epoch = []
     optim = torch.optim.Adagrad(model.parameters(), lr=0.001) 
