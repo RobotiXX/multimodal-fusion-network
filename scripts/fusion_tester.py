@@ -26,6 +26,8 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 
 print(f'Using device ========================================>  {device}')
 
+min_val_error = 100000
+
 
 def get_data_loader(input_file_path, read_type, batch_size):
     logging.info(f'Reading {read_type} file from path {input_file_path}')
@@ -35,7 +37,7 @@ def get_data_loader(input_file_path, read_type, batch_size):
     return data_loader
 
 
-def run_validation(val_files, model, batch_size, epoch):
+def run_validation(val_files, model, batch_size, epoch, optim):
        print("Running Validation..\n")
        running_error = []
        loss = torch.nn.MSELoss()
@@ -73,6 +75,14 @@ def run_validation(val_files, model, batch_size, epoch):
             running_error.append(np.average(per_file_total_loss))
 
         avg_loss_on_validation = np.average(running_error)
+        
+        if (epoch+1) % 10 == 0 and epoch!=0:
+            min_val_error = avg_loss_on_validation
+            print(f"saving model weights at validation error {min_val_error}")
+            torch.save({
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': optim.state_dict(),
+            }, f'fusion_model_at_val_loss_{min_val_error}.pth')
 
         print(f'=========================> Average Validation error is:   {avg_loss_on_validation} \n')
         return avg_loss_on_validation
@@ -82,14 +92,16 @@ def run_validation(val_files, model, batch_size, epoch):
 def run_training(train_files, val_dirs, batch_size, num_epochs):
     loss = torch.nn.MSELoss()
     model = BcFusionModel()
+    optim = None
     saved_model = './saved_fusion_model.pth'
     if os.path.exists(saved_model):
         print(f"===========> loading model from: {saved_model}")
         model.load_state_dict(torch.load(saved_model))
+        model.train()
     model.to(device)
-    error_at_epoch = []
+
     val_error_at_epoch = []
-    optim = torch.optim.Adagrad(model.parameters(), lr=0.001) 
+    optim = torch.optim.Adam(model.parameters(), lr=0.001) 
     # scheduler = MultiStepLR(optim, milestones=[2,12,27,42], gamma=0.1)
     epoch_loss = []
     for epoch in range(num_epochs):
@@ -147,7 +159,7 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
         # epoch_loss.append(np.average(running_loss))                
         print(f'================== epoch is: {epoch} and error is: {epoch_loss}==================\n')
 
-        val_error = run_validation(val_dirs, model, batch_size, epoch)
+        val_error = run_validation(val_dirs, model, batch_size, epoch, optim)
         val_error_at_epoch.append(val_error)
         experiment.log_metric( name = "Avg Training loss", value = np.average(running_loss), epoch= epoch+1)
         experiment.log_metric( name = "Avg Validation loss", value = np.average(val_error_at_epoch), epoch= epoch+1)
