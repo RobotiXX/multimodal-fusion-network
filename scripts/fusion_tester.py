@@ -94,14 +94,13 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
     model = BcFusionModel()
     optim = None
     saved_model = './saved_fusion_model.pth'
-    if os.path.exists(saved_model):
-        print(f"===========> loading model from: {saved_model}")
-        model.load_state_dict(torch.load(saved_model))
-        model.train()
+    print(f"===========> loading model from path")
+    model.load_state_dict(torch.load(saved_model))
+    model.train()
     model.to(device)
 
     val_error_at_epoch = []
-    optim = torch.optim.Adam(model.parameters(), lr=0.001) 
+    optim = torch.optim.Adagrad(model.parameters(), lr = 0.001) 
     # scheduler = MultiStepLR(optim, milestones=[2,12,27,42], gamma=0.1)
     epoch_loss = []
     for epoch in range(num_epochs):
@@ -131,7 +130,7 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
                 error_fusion = loss(pred_fusion, gt_cmd_vel)
                 error_img = loss(pred_img, gt_cmd_vel)
                 error_pcl = loss(pred_pcl, gt_cmd_vel)
-                error_total = error_fusion + ( 0.2 * error_img) + (0.8 * error_pcl)
+                error_total = error_fusion + (0.2 * error_img) + (0.8 * error_pcl)
                 
 
                 optim.zero_grad()
@@ -157,14 +156,14 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
         # scheduler.step()        
 
         # epoch_loss.append(np.average(running_loss))                
-        print(f'================== epoch is: {epoch} and error is: {epoch_loss}==================\n')
+        print(f'================== epoch is: {epoch} and error is: {np.average(running_loss)}==================\n')
 
         val_error = run_validation(val_dirs, model, batch_size, epoch, optim)
         val_error_at_epoch.append(val_error)
         experiment.log_metric( name = "Avg Training loss", value = np.average(running_loss), epoch= epoch+1)
         experiment.log_metric( name = "Avg Validation loss", value = np.average(val_error_at_epoch), epoch= epoch+1)
         
-    torch.save(model.state_dict(), "saved_fusion_model.pth")
+    # torch.save(model.state_dict(), "saved_fusion_model.pth")
 
 
 def main():
@@ -173,7 +172,7 @@ def main():
     train_dirs = [ os.path.join(train_path, dir) for dir in os.listdir(train_path)]
     val_dirs = [ os.path.join('../recorded-data/val', dir) for dir in os.listdir('../recorded-data/val')]
     batch_size = 16
-    epochs = 60
+    epochs = 100
     run_training(train_dirs, val_dirs, batch_size, epochs)
 
 
