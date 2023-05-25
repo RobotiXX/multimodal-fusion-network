@@ -21,6 +21,7 @@ local_goal = {}
 previous_velocities = []
 play_back_snapshot = {}
 image_history = []
+pcl_history = []
 
 def odom_callback(odom):
     position = odom.pose.pose.position
@@ -70,26 +71,27 @@ def aprrox_sync_callback(lidar, rgb, odom):
             image_history.pop(0)
 
         point_cloud = get_lidar_points(lidar)
+        pcl_history.append(point_cloud)
+        if len(pcl_history) > 4:
+            image_history.pop(0)
+       
         prev_cmd_vel = get_prev_cmd_val()
         prev_cmd_vel.pop()
         
-        # Record data at current point
-        play_back_snapshot[counter['index']] = {
-            "point_cloud": point_cloud,
-            "prev_cmd_vel": prev_cmd_vel,
-        }
 
         if len(image_history) == 4:
 
             align_content = {
-                counter['index'] - 3: play_back_snapshot[counter['index'] - 3],
-                counter['index'] - 2: play_back_snapshot[counter['index'] - 2],
-                counter['index'] - 1: play_back_snapshot[counter['index'] - 1], 
-                counter['index']: play_back_snapshot[counter['index']],
-                "images": image_history
+                "pcl": pcl_history,
+                "images": image_history,
+                "prev_cmd_vel": prev_cmd_vel
             }
 
-            print("push image history")
+            print(align_content)
+            
+
+
+           
         
         # previous_rbt_location.append((pos.x, pos.y, counter['index']))
         counter['index'] += 1
