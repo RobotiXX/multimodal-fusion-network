@@ -31,8 +31,7 @@ def cart2polar(xyz):
 
 
 class ApplyTransformation(Dataset):
-    def __init__(self, input_data, grid_size = [72, 30, 30]):
-        self.grid_size = np.asarray(grid_size)  
+    def __init__(self, input_data):
         self.input_data = input_data    
         self.image_transforms = transforms.Compose([
                     transforms.ToTensor(),
@@ -41,42 +40,38 @@ class ApplyTransformation(Dataset):
     
     def __len__(self):
          # TODO: this will return 1 example set with the following details
-        return len(self.input_data)
+        return 1
 
     def __getitem__(self, index):
         # Transform images
-        data = self.input_data[index]
-        self.image_paths = data[0]
-        self.point_clouds = data[1]
-        self.local_goal = data[2]
-        self.prev_cmd_vel = data[3]        
-        self.robot_position  = data[4]
-        self.gt_cmd_vel = data[5]
+        data = self.input_data
+        self.images = data['images']
+        self.point_clouds = data['pcl']
+        self.local_goal = data['local_goal']
+        self.prev_cmd_vel = data['prev_cmd_vel']        
+        # self.robot_position  = data[4]
+        # self.gt_cmd_vel = data[5]
         
 
-        images = [ self.image_transforms(read_images(path)) for path in self.image_paths]
+        images = [ self.image_transforms(img) for img in self.images]
         stacked_images = torch.cat(images, dim=0)
         
         # Transform local goal into robot frame
-        robot_coordinate_in_glob_frame = get_transformation_matrix(self.robot_position[0],self.robot_position[1])
-        transform_to_robot_coordinate =   np.linalg.pinv(robot_coordinate_in_glob_frame)
-
-        local_goal_in_robot_frame = transform_to_robot_coordinate @ np.asanyarray([self.local_goal[0], self.local_goal[1],1]).reshape((3,1))	
-        local_goal = (local_goal_in_robot_frame[0,0], local_goal_in_robot_frame[1,0])
+    
 
         # Transform point-clouds to 3D-Cylider co-ordinate system
         point_clouds = np.concatenate(self.point_clouds, axis=0)   
 
     
-        local_goal = torch.tensor(local_goal, dtype=torch.float32).ravel()
-        local_goal = (local_goal - local_goal.min()) / (local_goal.max() - local_goal.min())
+        # local_goal = torch.tensor(local_goal, dtype=torch.float32).ravel()
+        # local_goal = (local_goal - local_goal.min()) / (local_goal.max() - local_goal.min())
 
         prev_cmd_vel = torch.tensor(self.prev_cmd_vel, dtype=torch.float32).ravel()
 
         point_clouds =  torch.tensor(point_clouds)
         point_clouds = torch.t(point_clouds)
 
-        return (stacked_images, point_clouds, local_goal, prev_cmd_vel)
+        return (stacked_images, point_clouds, self.local_goal, prev_cmd_vel)
 
 
 
