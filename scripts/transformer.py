@@ -63,15 +63,15 @@ class ApplyTransformation(Dataset):
         point_clouds = np.concatenate(self.point_clouds, axis=0)   
 
     
-        # local_goal = torch.tensor(local_goal, dtype=torch.float32).ravel()
-        # local_goal = (local_goal - local_goal.min()) / (local_goal.max() - local_goal.min())
+        local_goal = torch.tensor(self.local_goal, dtype=torch.float32).ravel()
+        local_goal = (local_goal - local_goal.min()) / (local_goal.max() - local_goal.min())
 
         prev_cmd_vel = torch.tensor(self.prev_cmd_vel, dtype=torch.float32).ravel()
 
         point_clouds =  torch.tensor(point_clouds)
         point_clouds = torch.t(point_clouds)
 
-        return (stacked_images, point_clouds, self.local_goal, prev_cmd_vel)
+        return (stacked_images, point_clouds, local_goal, prev_cmd_vel)
 
 
 

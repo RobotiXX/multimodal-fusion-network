@@ -82,7 +82,7 @@ def run_validation(val_files, model, batch_size, epoch, optim):
             torch.save({
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optim.state_dict(),
-            }, f'fusion_model_at_val_loss_{min_val_error}.pth')
+            }, f'l1_fusion_model_at_val_loss_{min_val_error}.pth')
 
         print(f'=========================> Average Validation error is:   {avg_loss_on_validation} \n')
         return avg_loss_on_validation
@@ -90,13 +90,13 @@ def run_validation(val_files, model, batch_size, epoch, optim):
 
 
 def run_training(train_files, val_dirs, batch_size, num_epochs):
-    loss = torch.nn.MSELoss()
+    loss = torch.nn.SmoothL1Loss(beta = 0.11)
     model = BcFusionModel()
     optim = None
-    saved_model = './saved_fusion_model.pth'
-    print(f"===========> loading model from path")
-    model.load_state_dict(torch.load(saved_model))
-    model.train()
+    # saved_model = './saved_fusion_model.pth'
+    # print(f"===========> loading model from path")
+    # model.load_state_dict(torch.load(saved_model))
+    # model.train()
     model.to(device)
 
     val_error_at_epoch = []
@@ -159,9 +159,9 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
         print(f'================== epoch is: {epoch} and error is: {np.average(running_loss)}==================\n')
 
         val_error = run_validation(val_dirs, model, batch_size, epoch, optim)
-        val_error_at_epoch.append(val_error)
+        # val_error_at_epoch.append(val_error)
         experiment.log_metric( name = "Avg Training loss", value = np.average(running_loss), epoch= epoch+1)
-        experiment.log_metric( name = "Avg Validation loss", value = np.average(val_error_at_epoch), epoch= epoch+1)
+        experiment.log_metric( name = "Avg Validation loss", value = np.average(val_error), epoch= epoch+1)
         
     # torch.save(model.state_dict(), "saved_fusion_model.pth")
 
