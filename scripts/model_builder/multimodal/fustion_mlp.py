@@ -15,16 +15,16 @@ class FusionMLP(nn.Module):
 
         self.linear1 = nn.Linear(745471, 512)
         self.linear2 = nn.Linear(490581,256)
-        self.linear3 = nn.Linear(124344,128)
-        self.linear4 = nn.Linear(3*128,64)
-        self.linear5 = nn.Linear(64,32)
-        self.linear6 = nn.Linear(32,16)
-        self.linear7 = nn.Linear(16,2)
+        self.linear3 = nn.Linear(124344,256)
+        self.linear4 = nn.Linear(4*128, 1024)
+        self.linear5 = nn.Linear(1024,1)
+        # self.linear6 = nn.Linear(32,16)
+        # self.linear7 = nn.Linear(16,2)
 
         self.bn1 = nn.BatchNorm1d(512)
         self.bn2 = nn.BatchNorm1d(256)
-        self.bn3 = nn.BatchNorm1d(128)
-        self.bn4 = nn.BatchNorm1d(64)
+        self.bn3 = nn.BatchNorm1d(256)
+        self.bn4 = nn.BatchNorm1d(1024)
         self.bn5 = nn.BatchNorm1d(32)
         self.bn6 = nn.BatchNorm1d(16)
 
@@ -55,13 +55,8 @@ class FusionMLP(nn.Module):
         x = self.bn4(self.linear4(x))
         x = self.act4(x)  
 
-        x = self.bn5(self.linear5(x))
-        x = self.act5(x)  
-        
-        x = self.bn6(self.linear6(x))
-        x = self.act6(x)  
-        
-        x = self.linear7(x)
+        x = self.linear5(x)
+          
         
         return x
 
