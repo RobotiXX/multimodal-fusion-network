@@ -29,7 +29,9 @@ pcl_history = []
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-ckpt = torch.load("/home/ranjan/Workspace/my_works/fusion-network/scripts/fusion_model_at_val_loss_0.7496246003856262.pth")
+print(f'loading model..')
+ckpt = torch.load("/home/ranjan/Workspace/my_works/fusion-network/scripts/model_at_110.pth")
+print(f'model loaded')
 model = BcFusionModel()
 model.load_state_dict(ckpt['model_state_dict'])
 model.to(device)
@@ -79,6 +81,7 @@ def get_filtered_pcl(pcl):
 def set_lc_goal(goal):
     global constant_goal
     constant_goal = (goal.pose.position.x, goal.pose.position.y)
+    print(constant_goal)
 
 def get_goal():
     return constant_goal
@@ -88,7 +91,7 @@ def aprrox_sync_callback(lidar, rgb, odom):
     cmd_vel = odom.twist.twist
     # This function is called at 10Hz
     # Subsampling at each 5th second approx
-    if counter['sub-sampler'] % 8 == 0:
+    if counter['sub-sampler'] % 4 == 0:
         # TODO: these 4 values will be pickled at index counter['index'] except image
         img = store_image(rgb)
         
@@ -98,31 +101,33 @@ def aprrox_sync_callback(lidar, rgb, odom):
         
         if len(image_history) > 4:
             image_history.pop(0)
-
+        else:
+          msg =  'Ready for inference' if len(image_history) == 4 else 'Not ready yet for inference'
+          print(msg) 
         
 
         point_cloud = get_lidar_points(lidar)
-        print("before append len image hisotry", len(pcl_history))
+        # print("before append len image hisotry", len(pcl_history))
 
         pcl_history.append(point_cloud)
 
-        print("before len image hisotry", len(pcl_history))
+        # print("before len image hisotry", len(pcl_history))
         if len(pcl_history) > 4:
             pcl_history.pop(0)
 
-        print("after len image hisotry", len(pcl_history))
+        # print("after len image hisotry", len(pcl_history))
         prev_cmd_vel = get_prev_cmd_val()
         # prev_cmd_vel.pop()
         
         
-        print(constant_goal)
+        
         if len(image_history) == 4 and constant_goal != None:
 
             print("inference......")
             filtered_pcl = get_filtered_pcl(pcl_history)
-            print(len(prev_cmd_vel))
+            # print(len(prev_cmd_vel))
             local_goal = get_goal()
-            print(f'local goal {local_goal}')
+            # print(f'local goal {local_goal}')
             align_content = {
                 "pcl": filtered_pcl,
                 "images": image_history,
@@ -143,18 +148,20 @@ def aprrox_sync_callback(lidar, rgb, odom):
                 lcg= lcg.to(device)
                 prev_cmd_vel= prev_cmd_vel.to(device)
 
-                print(stacked_images.shape)
-                print(pcl.shape)
-                print(lcg.shape)
-                print(prev_cmd_vel.shape)
+                # print(stacked_images.shape)
+                # print(pcl.shape)
+                # print(lcg.shape)
+                # print(prev_cmd_vel.shape)
 
 
-                pred_fusion, pred_img, pred_pcl = model(stacked_images, pcl, lcg, prev_cmd_vel)
-                result = pred_fusion.detach().cpu().numpy()[0]
-                print(result)
+                fsn_lin, fsn_anglr, img_lin, img_anglr, pcl_lin, pcl_anglr = model(stacked_images, pcl, lcg, prev_cmd_vel)
+                lin = fsn_lin.detach().cpu().numpy()[0]/(10*4)
+                anglr = fsn_anglr.detach().cpu().numpy()[0]/100
+                print(f'{lin[0]}  , {anglr[0]} \n') 
+                print(anglr[0])
                 msg = Twist()
-                msg.linear.x = result[0]
-                msg.angular.z = result[1]
+                msg.linear.x = lin[0]
+                msg.angular.z = anglr[0]
 
                 print('publishing')
                 cmd_publisher.publish(msg)

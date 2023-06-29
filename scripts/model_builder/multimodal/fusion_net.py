@@ -6,6 +6,8 @@ from ..image.backbone import make_mlp
 from ..image.backbone_fusion import ImageFusionModel
 from ..pcl.pointnet_fusion import PointNetDenseFusionModel
 from .fustion_mlp import FusionMLP
+from .pcl_mlp import PclMLP
+from .image_mlp import ImageMLP
 
 
 class BcFusionModel(nn.Module):
@@ -23,9 +25,7 @@ class BcFusionModel(nn.Module):
     ):
 
         super().__init__()
-        self.pcl_mlp = [198000+128+128, 128, 64, 32 , 2]
-        self.image_mlp = [512+128+128, 64, 32, 2]
-        self.fusion_mlp = FusionMLP()
+        
         self.backbone_pcl = PointNetDenseFusionModel().float()
         self.backbone_img = ImageFusionModel(backbone=backbone_img, n_frames= n_frames, n_channels=n_channels)
         self.goal_encoder = make_mlp(goal_encoder, act, l_act, bn, dropout)
@@ -39,8 +39,9 @@ class BcFusionModel(nn.Module):
         self.mx_pool_lyr2_pcl = nn.MaxPool1d(kernel_size= 8, stride= 6)
         self.mx_pool_lyr3_pcl = nn.MaxPool1d(kernel_size= 2, stride= 2)
 
-        self.controller_img = make_mlp(self.image_mlp, act, l_act, bn, dropout)
-        self.controller_pcl = make_mlp(self.pcl_mlp, act, l_act, bn, dropout)
+        self.controller_img = ImageMLP()
+        self.controller_pcl = PclMLP()
+        self.fusion_mlp = FusionMLP()
         
 
     def forward(self, stacked_images, pcl, local_goal, prev_cmd_vel):
@@ -50,8 +51,6 @@ class BcFusionModel(nn.Module):
         point_cloud_feat, intr_pts_rep = self.backbone_pcl(pcl.float())
         
         goal = self.goal_encoder(local_goal)
-        
-        # print(prev_cmd_vel.shape)
         prev_cmd = self.prev_cmd_encoder(prev_cmd_vel)
 
         pooled_lyr1_img = self.mx_pool_lyr2_img( intr_img_rep['layer2'] )
@@ -73,13 +72,13 @@ class BcFusionModel(nn.Module):
         fusion_input3 = torch.cat([pooled_lyr3_img, pooled_lyr3_pcl], dim=1)
 
 
-        predict_fusion_model  = self.fusion_mlp(fusion_input1, fusion_input2, fusion_input3, goal, prev_cmd)
+        predict_fusion_model_lin, predict_fusion_model_angular = self.fusion_mlp(fusion_input1, fusion_input2, fusion_input3, goal, prev_cmd)
 
         input_image_features = torch.cat([imgs_feat, goal, prev_cmd],dim=-1)
-        predict_img_model = self.controller_img(input_image_features)
+        img_lin, img_angular = self.controller_img(input_image_features)
 
         input_pcl_features = torch.cat([point_cloud_feat, goal, prev_cmd],dim=-1)
-        predict_pcl_model = self.controller_pcl(input_pcl_features)
+        pcl_lin, pcl_angular = self.controller_pcl(input_pcl_features)
 
 
-        return predict_fusion_model, predict_img_model, predict_pcl_model
+        return predict_fusion_model_lin, predict_fusion_model_angular, img_lin, img_angular, pcl_lin, pcl_angular

@@ -18,8 +18,14 @@ class FusionMLP(nn.Module):
         self.linear3 = nn.Linear(124344,256)
         self.linear4 = nn.Linear(4*128, 1024)
         self.linear5 = nn.Linear(1024,1)
-        # self.linear6 = nn.Linear(32,16)
-        # self.linear7 = nn.Linear(16,2)
+
+        self.angular = nn.Sequential(
+            nn.Linear(1024,64),
+            nn.BatchNorm1d(64),
+            nn.ReLU(),
+            nn.Linear(64,1)
+        )
+        
 
         self.bn1 = nn.BatchNorm1d(512)
         self.bn2 = nn.BatchNorm1d(256)
@@ -53,12 +59,13 @@ class FusionMLP(nn.Module):
         # print(x.shape,goal.shape, prev_cmd_vel.shape)
         x = torch.cat([x, goal, prev_cmd_vel], dim=-1)
         x = self.bn4(self.linear4(x))
-        x = self.act4(x)  
+        x_shared = self.act4(x)  
 
-        x = self.linear5(x)
+        x = self.linear5(x_shared)
+
+        y = self.angular(x_shared)
           
-        
-        return x
+        return x, y
 
 
 

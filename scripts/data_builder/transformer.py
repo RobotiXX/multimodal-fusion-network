@@ -94,7 +94,7 @@ class ApplyTransformation(Dataset):
         # return_xyz = xyz_polar - voxel_centers
         # transformed_pcl = np.concatenate((return_xyz, xyz_polar, point_clouds[:, :2]), axis=1)
         
-        gt_cmd_vel = (self.gt_cmd_vel[1]*1000)
+        gt_cmd_vel = (self.gt_cmd_vel[0]*10, self.gt_cmd_vel[1]*100)
         local_goal = torch.tensor(local_goal, dtype=torch.float32).ravel()
 
         prev_cmd_vel = torch.tensor(self.prev_cmd_vel, dtype=torch.float32).ravel()
