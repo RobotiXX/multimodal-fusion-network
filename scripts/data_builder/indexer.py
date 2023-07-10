@@ -11,7 +11,7 @@ class IndexDataset(Dataset):
         self.root_path = dir_path
         self.pickle_path = os.path.join(dir_path , 'snapshot.pickle')        
         
-        logging.info('Parsing pickle file...')
+        logging.info(f'Parsing pickle file: {self.pickle_path}')
     
         with open(self.pickle_path, 'rb') as data:
             self.content = pickle.load(data)

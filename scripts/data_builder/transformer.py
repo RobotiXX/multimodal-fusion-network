@@ -11,6 +11,9 @@ from scipy.spatial.transform import Rotation as R
 
 coloredlogs.install()
 
+
+
+
 def read_images(path):
     # print(f"{path = }")
     image = cv2.imread(path)
@@ -69,35 +72,20 @@ class ApplyTransformation(Dataset):
         # Transform point-clouds to 3D-Cylider co-ordinate system
         point_clouds = np.concatenate(self.point_clouds, axis=0)   
 
-        # point_clouds = point_clouds[-25000, :]
-        # TODO: subsample the point clouds to keep a fixed number of points across frames
-        # xyz_polar = cart2polar(point_clouds)
-
-        # max_bound_r = np.percentile(xyz_polar[:, 0], 100, axis=0)
-        # min_bound_r = np.percentile(xyz_polar[:, 0], 0, axis=0)
-
-        # max_bound = np.max(xyz_polar[:, 1:], axis=0)
-        # min_bound = np.min(xyz_polar[:, 1:], axis=0)
-
-        # max_bound = np.concatenate(([max_bound_r],max_bound))
-        # min_bound = np.concatenate(([min_bound_r], min_bound))
-
-        # range_to_crop = max_bound - min_bound
-        # cur_grid_size = (self.grid_size - 1)
-        # intervals = range_to_crop / cur_grid_size
-
-        # if (intervals == 0).any(): print("Zero interval!")
-        # grid_index = (np.floor(( np.clip(xyz_polar, min_bound, max_bound) - min_bound) / intervals)).astype(int)
         
-        # # Center data around each voxel for PTnet
-        # voxel_centers = (grid_index.astype(np.float32) + 0.5) * intervals + min_bound
-        # return_xyz = xyz_polar - voxel_centers
-        # transformed_pcl = np.concatenate((return_xyz, xyz_polar, point_clouds[:, :2]), axis=1)
-        
-        gt_cmd_vel = (self.gt_cmd_vel[0]*10, self.gt_cmd_vel[1]*100)
+        # print(f'gt_velocity: {self.gt_cmd_vel}')
+
+        prev_cmd_vel = np.array(self.prev_cmd_vel, dtype=np.float64)
+        perv_linear = np.expand_dims(prev_cmd_vel[:,0], axis=1)
+        prev_anglular = np.expand_dims(prev_cmd_vel[:,2], axis=1)
+        # print(prev_cmd_vel)
+        lin_and_angular = np.concatenate([perv_linear, prev_anglular], axis=1)
+        # print(lin_and_angular.shape)
+        gt_cmd_vel = (self.gt_cmd_vel[0], self.gt_cmd_vel[2])
         local_goal = torch.tensor(local_goal, dtype=torch.float32).ravel()
 
-        prev_cmd_vel = torch.tensor(self.prev_cmd_vel, dtype=torch.float32).ravel()
+        
+        prev_cmd_vel = torch.tensor(lin_and_angular, dtype=torch.float32).ravel()
         gt_cmd_vel = torch.tensor(gt_cmd_vel, dtype=torch.float32).ravel()
 
         point_clouds =  torch.tensor(point_clouds)

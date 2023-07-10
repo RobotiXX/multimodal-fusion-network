@@ -17,7 +17,8 @@ from torch.optim.lr_scheduler import MultiStepLR
 # Create an experiment with your api key
 experiment = Experiment(
     api_key="Ly3Tc8W7kfxPmAxsArJjX9cgo",
-    project_name="multimodal-net-with-rnn",
+    project_name= "multimodal-net-with-rnn",
+    # project_name="kk",
     workspace="bhabaranjan",
 )
 
@@ -38,8 +39,15 @@ def get_data_loader(input_file_path, read_type, batch_size):
     data_loader = DataLoader(transformer, batch_size = batch_size, drop_last=True)
     return data_loader
 
-def get_loss(loss_fn, lin_vel, angular_vel, gt_lin, gt_angular):
-    error = (4 * loss_fn(lin_vel, gt_lin)) + (10 * (loss_fn(angular_vel, gt_angular)))
+def get_loss(loss_fn, lin_vel, angular_vel, gt_lin, gt_angular, data_src):
+    lin_error =  loss_fn(lin_vel, gt_lin) 
+    anglr_error = loss_fn(angular_vel, gt_angular)
+    error = lin_error + anglr_error
+    # print(f'linear error: {lin_error}')
+    # print(f'angular error: {anglr_error}')
+
+    experiment.log_metric(name = str('line_error_'+data_src), value=lin_error.item())
+    experiment.log_metric(name = str('anglr_error_'+data_src), value=anglr_error.item())
     return error
 
 
@@ -73,9 +81,9 @@ def run_validation(val_files, model, batch_size, epoch, optim):
                 gt_x = torch.unsqueeze(gt_cmd_vel[:,0],1)
                 gt_y = torch.unsqueeze(gt_cmd_vel[:,1],1)
                 
-                error_fusion = get_loss(loss, fsn_lin, fsn_anglr, gt_x, gt_y)
-                error_img = get_loss(loss, img_lin, img_anglr, gt_x, gt_y)
-                error_pcl = get_loss(loss, pcl_lin, pcl_anglr, gt_x, gt_y)
+                error_fusion = get_loss(loss, fsn_lin, fsn_anglr, gt_x, gt_y,'fusion')
+                error_img = get_loss(loss, img_lin, img_anglr, gt_x, gt_y, 'img')
+                error_pcl = get_loss(loss, pcl_lin, pcl_anglr, gt_x, gt_y, 'pcl')
                 
                 error_total = error_fusion + ( 0.2 * error_img) + (0.8 * error_pcl)
 
@@ -110,13 +118,7 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
     model = BcFusionModel()
     optim = torch.optim.Adadelta(model.parameters(), lr = 0.01) 
 
-    # ckpt = torch.load('/home/ranjan/Workspace/my_works/fusion-network/scripts/model_at_100.pth')
     model.to(device)
-    # model.load_state_dict(ckpt['model_state_dict'])
-    # optim.load_state_dict(ckpt['optimizer_state_dict'])
-    # saved_model = './saved_fusion_model.pth'
-    # print(f"===========> loading model from path")
-    # model.load_state_dict(torch.load(saved_model))
     
     
     model.train()
@@ -130,9 +132,10 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
         # lr = scheduler.get_last_lr()
         # experiment.log_metric( name = "Learning Rate Decay", value = lr, epoch= epoch+1)
         running_loss = []
-        shuffle(train_files)
+        # shuffle(train_files)
         for train_file in train_files:        
             train_loader = None 
+            print(train_file)
             if train_file not in data_dict:
                 train_loader = get_data_loader( train_file, 'train', batch_size = batch_size )   
                 data_dict[train_file] = train_loader
@@ -145,6 +148,9 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
             per_file_loss_pcl = [] 
             per_file_total_loss = []
             for index, (stacked_images, pcl ,local_goal, prev_cmd_vel, gt_cmd_vel) in enumerate(train_loader):
+
+                # print(f'gt_cmd: {gt_cmd_vel}')
+                # print(f'prev_cmd_vel:{prev_cmd_vel}')
                 
                 stacked_images = stacked_images.to(device)
                 pcl = pcl.to(device)
@@ -165,9 +171,9 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
                 print(gt_x)
                 print(gt_y)
                 
-                error_fusion = get_loss(loss, fsn_lin, fsn_anglr, gt_x, gt_y)
-                error_img = get_loss(loss, img_lin, img_anglr, gt_x, gt_y)
-                error_pcl = get_loss(loss, pcl_lin, pcl_anglr, gt_x, gt_y)
+                error_fusion = get_loss(loss, fsn_lin, fsn_anglr, gt_x, gt_y,'train_fusion')
+                error_img = get_loss(loss, img_lin, img_anglr, gt_x, gt_y, 'train_img')
+                error_pcl = get_loss(loss, pcl_lin, pcl_anglr, gt_x, gt_y,'train_pcl')
                 
                 error_total = error_fusion + ( 0.2 * error_img) + (0.8 * error_pcl)
 
@@ -205,8 +211,6 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
         # val_error_at_epoch.append(val_error)
         experiment.log_metric( name = "Avg Training loss", value = np.average(running_loss), epoch= epoch+1)
         
-        
-    # torch.save(model.state_dict(), "saved_fusion_model.pth")
 
 
 def main():
@@ -215,9 +219,12 @@ def main():
     train_dirs = [ os.path.join(train_path, dir) for dir in os.listdir(train_path)]
     val_dirs = [ os.path.join('../recorded-data/val', dir) for dir in os.listdir('../recorded-data/val')]
     batch_size = 4
-    epochs = 250
+    epochs = 100
     run_training(train_dirs, val_dirs, batch_size, epochs)
 
 
 
 main()
+
+
+

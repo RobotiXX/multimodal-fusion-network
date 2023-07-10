@@ -10,7 +10,7 @@ import sys
 import os
 import pickle
 
-from sensor_msgs.msg import PointCloud2, CompressedImage
+from sensor_msgs.msg import PointCloud2, CompressedImage, Joy
 from nav_msgs.msg import Odometry
 from pathlib import Path
 
@@ -27,15 +27,17 @@ bag_file_name = rosbag_path.split('/')[-1]
 record_storage_path = os.path.join('../../recorded-data', bag_file_name)        
 os.makedirs(record_storage_path, exist_ok=True)
 
+def getJoystickValue(x, scale, kDeadZone=0.02):
+    if kDeadZone != 0.0 and abs(x) < kDeadZone:
+        return 0.0
+    return ((x - np.sign(x) * kDeadZone) / (1.0 - kDeadZone) * scale)
 
 def odom_callback(odom):
     position = odom.pose.pose.position
     cmd_vel = odom.twist.twist
-
+    # print(cmd_vel)
     # store 20 latest liner and angular velocities
-    previous_velocities.insert(0, (cmd_vel.linear.x, cmd_vel.angular.z))
-    if len(previous_velocities) > 20:
-        previous_velocities.pop()
+    
 
     for idx, robot_pos in enumerate(previous_rbt_location):
         # if the current odom position is with in 10meter radius of a previous position
@@ -70,23 +72,42 @@ def store_image(rgb_image, idx):
     image_path = os.path.join(record_storage_path, str(idx)+".jpg")
     cv2.imwrite(image_path, image)
 
+def joy_call_back(joy):
+    joy_axes = joy.axes
+    previous_velocities.insert(0, (
+            getJoystickValue(joy_axes[4], -1.6),
+            getJoystickValue(joy_axes[3], -1.6),
+            getJoystickValue(joy_axes[0], -np.deg2rad(90.0), kDeadZone=0.0),
+        ))
+    while len(previous_velocities) > 22:
+        previous_velocities.pop()
 
-def aprrox_sync_callback(lidar, rgb, odom):
+def aprrox_sync_callback(lidar, rgb, odom, joy):
     pos = odom.pose.pose.position
     cmd_vel = odom.twist.twist
+    joy_axes = joy.axes
     # This function is called at 10Hz
     # Subsampling at each 5th second approx
+    # print(f'counter: {counter["sub-sampler"]}')
     if counter['sub-sampler'] % 6 == 0:
         # TODO: these 4 values will be pickled at index counter['index'] except image
         store_image(rgb, counter['index'])
         point_cloud = get_lidar_points(lidar)
-        prev_cmd_vel = get_prev_cmd_val()
-        prev_cmd_vel.pop()
-        gt_cmd_vel = (cmd_vel.linear.x, cmd_vel.angular.z)
+        prev_cmd_vel = get_prev_cmd_val().copy()
+        prev_cmd_vel.pop(0)
+        prev_cmd_vel.pop(0)
         robot_pos = (pos, odom.pose.pose.orientation, counter['index'])
         # Record data at current point
+        gt_cmd_vel = (
+            getJoystickValue(joy_axes[4], -1.6),
+            getJoystickValue(joy_axes[3], -1.6),
+            getJoystickValue(joy_axes[0], -np.deg2rad(90.0), kDeadZone=0.0),
+        )
+        # print(f'ground truth velocity: {gt_cmd_vel}\n\n')
+        # print(prev_cmd_vel)
         play_back_snapshot[counter['index']] = {
             "point_cloud": point_cloud,
+            "prev_cmd_vel_len": len(prev_cmd_vel),
             "prev_cmd_vel": prev_cmd_vel,
             "robot_position": robot_pos,
             "gt_cmd_vel": gt_cmd_vel
@@ -96,7 +117,7 @@ def aprrox_sync_callback(lidar, rgb, odom):
         counter['index'] += 1
         counter['sub-sampler'] = 1
 
-    counter['sub-sampler'] += 1
+    counter['sub-sampler'] += 1    
 
 
 rospy.init_node('listen_record_data', anonymous=True)
@@ -108,12 +129,15 @@ rosbag_play_process = subprocess.Popen(
 lidar = message_filters.Subscriber('/velodyne_points', PointCloud2)
 rgb = message_filters.Subscriber('/image_raw/compressed', CompressedImage)
 odom = message_filters.Subscriber('/odom', Odometry)
-ts = message_filters.ApproximateTimeSynchronizer([lidar, rgb, odom], 100, 0.05, allow_headerless=True)
+joy = message_filters.Subscriber('/joystick', Joy)
 
-ts.registerCallback(aprrox_sync_callback)
+
+
 odom.registerCallback(odom_callback)
+joy.registerCallback(joy_call_back)
 
-
+ts = message_filters.ApproximateTimeSynchronizer([lidar, rgb, odom, joy], 100, 0.05, allow_headerless=True)
+ts.registerCallback(aprrox_sync_callback)
 
 while not rospy.is_shutdown():
     if rosbag_play_process.poll() is not None:
