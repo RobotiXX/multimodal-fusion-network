@@ -49,17 +49,6 @@ def get_loss(loss_fn, lin_vel, angular_vel, gt_lin, gt_angular, data_src):
 
     experiment.log_metric(name = str('line_error_'+data_src), value=lin_err_val)
     experiment.log_metric(name = str('anglr_error_'+data_src), value=anglr_error_val)
-    
-
-    # if lin_err_val > anglr_error_val and anglr_error_val!=0:
-    #     dynamic_weight = lin_err_val / anglr_error_val
-    #     print(f'greater lin error: {dynamic_weight}')
-    #     return lin_error + (dynamic_weight * anglr_error_val)
-
-    # if anglr_error_val > lin_err_val and lin_err_val != 0:
-    #     dynamic_weight = anglr_error_val / lin_err_val
-    #     print(f'greater anglr error: {dynamic_weight}')
-    #     return (dynamic_weight*lin_error) + anglr_error
 
 
     return error
@@ -69,6 +58,7 @@ def run_validation(val_files, model, batch_size, epoch, optim):
        print("Running Validation..\n")
        running_error = []
        loss = torch.nn.MSELoss()
+       model.eval()
        with torch.no_grad():
         for val_file in val_files:        
             val_loader = None
@@ -136,21 +126,10 @@ def run_validation(val_files, model, batch_size, epoch, optim):
 def run_training(train_files, val_dirs, batch_size, num_epochs):
     loss = torch.nn.MSELoss()
     model = BcFusionModel()
-    # ckpt = torch.load("/home/ranjan/Workspace/my_works/fusion-network/scripts/model_at_100.pth")
-    # model.load_state_dict(ckpt['model_state_dict'])
-    # model.eval()
-
-
-    optim = torch.optim.Adam(model.parameters(), lr = 0.001) 
+    optim = torch.optim.Adam(model.parameters(), lr = 0.0001) 
 
     model.to(device)
-    # run_validation(val_dirs, model, batch_size, 3, optim)
-    
-    model.train()
-    val_error_at_epoch = []
-    
-    scheduler = MultiStepLR(optim, milestones=[2,12,27,42], gamma=0.1)
-    epoch_loss = []
+
     data_dict = {}
     for epoch in range(num_epochs):
         num_files = 0
@@ -158,6 +137,7 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
         # experiment.log_metric( name = "Learning Rate Decay", value = lr, epoch= epoch+1)
         running_loss = []
         # shuffle(train_files)
+        model.train()
         for train_file in train_files:        
             train_loader = None 
             print(train_file)

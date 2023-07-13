@@ -15,13 +15,13 @@ class PclMLP(nn.Module):
 
         self.common = nn.Sequential(
             nn.Linear(198000+128+128,128),
-            nn.BatchNorm1d(128),
+            # nn.BatchNorm1d(128),
             nn.LeakyReLU(),
             nn.Linear(128,64),
-            nn.BatchNorm1d(64),
+            # nn.BatchNorm1d(64),
             nn.ReLU(),
             nn.Linear(64,32),
-            nn.BatchNorm1d(32),
+            # nn.BatchNorm1d(32),
             nn.ReLU()
         )
 

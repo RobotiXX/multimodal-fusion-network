@@ -81,8 +81,8 @@ def run_validation(val_files, model, batch_size, epoch, optim):
                 gt_x = torch.unsqueeze(gt_cmd_vel[:,0],1)
                 gt_y = torch.unsqueeze(gt_cmd_vel[:,1],1)
 
-                # print(fsn_lin/10)
-                # print(fsn_anglr/100)
+                # print(fsn_lin/100)
+                # print(fsn_anglr/1000)
  
                 # print(gt_x)
                 # print(gt_y)
@@ -132,7 +132,7 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
     model.to(device)
     run_validation(val_dirs, model, batch_size, 0, optim)
     
-    model.train()
+    # model.train()
     val_error_at_epoch = []
     
     # scheduler = MultiStepLR(optim, milestones=[2,12,27,42], gamma=0.1)
@@ -223,9 +223,9 @@ def main():
     # train_path = "../recorded-data/sandbox"
     train_dirs = [ os.path.join(train_path, dir) for dir in os.listdir(train_path)]
     val_dirs = [ os.path.join('../recorded-data/val', dir) for dir in os.listdir('../recorded-data/val')]
-    batch_size = 12
+    batch_size = 1
     epochs = 250 
-    run_training(train_dirs, val_dirs, batch_size, epochs)
+    run_training(train_dirs, val_dirs, 1, epochs)
 
 
 
