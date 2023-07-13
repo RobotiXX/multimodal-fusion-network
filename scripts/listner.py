@@ -30,7 +30,7 @@ pcl_history = []
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 print(f'loading model..')
-ckpt = torch.load("/home/ranjan/Workspace/my_works/fusion-network/scripts/model_at_110.pth")
+ckpt = torch.load("/home/ranjan/Workspace/my_works/fusion-network/scripts/model_at_60.pth")
 print(f'model loaded')
 model = BcFusionModel()
 model.load_state_dict(ckpt['model_state_dict'])
@@ -53,17 +53,18 @@ def odom_callback(odom):
 
 def get_lidar_points(lidar):
     point_cloud = []
+    filtered_points = []
     # print("getting lidar...")
     for point in pc2.read_points(lidar, skip_nans=True, field_names=('x', 'y', 'z')):
-        pt_x = point[0]
-        pt_y = point[1]
-        pt_z = point[2]
-        point_cloud.append([pt_x, pt_y, pt_z])
-    return point_cloud
+        if (point[0]**2 + point[1]**2 + point[2]**2) <= 49:
+                filtered_points.append(point)
+    # point_cloud.append(filtered_points)
+    print(len(filtered_points[:5500]))
+    return filtered_points[:5500]
 
 
 def get_prev_cmd_val():
-    return previous_velocities
+    return previous_velocities.copy()
 
 
 def store_image(rgb_image):
@@ -86,12 +87,18 @@ def set_lc_goal(goal):
 def get_goal():
     return constant_goal
 
+def print_image(rgb_images, idx):
+    for ind, rgb_image in enumerate(rgb_images):
+        # image = cv2.resize(image, (264, 300))
+        image_path = os.path.join('./testing', str(idx)+str(ind)+".jpg")
+        cv2.imwrite(image_path, rgb_image)
+
 def aprrox_sync_callback(lidar, rgb, odom):
     pos = odom.pose.pose.position
     cmd_vel = odom.twist.twist
     # This function is called at 10Hz
     # Subsampling at each 5th second approx
-    if counter['sub-sampler'] % 4 == 0:
+    if counter['sub-sampler'] % 6 == 0:
         # TODO: these 4 values will be pickled at index counter['index'] except image
         img = store_image(rgb)
         
@@ -124,8 +131,10 @@ def aprrox_sync_callback(lidar, rgb, odom):
         if len(image_history) == 4 and constant_goal != None:
 
             print("inference......")
+            
             filtered_pcl = get_filtered_pcl(pcl_history)
             # print(len(prev_cmd_vel))
+            # print_image(image_history, counter['index'])
             local_goal = get_goal()
             # print(f'local goal {local_goal}')
             align_content = {
@@ -136,35 +145,35 @@ def aprrox_sync_callback(lidar, rgb, odom):
             }
 
             transformer = ApplyTransformation(align_content)
-            stacked_images, pcl, lcg, prev_cmd_vel =  transformer.__getitem__(0)
-            with torch.no_grad():
-                stacked_images = stacked_images.unsqueeze(0)
-                pcl = pcl.unsqueeze(0)
-                lcg = lcg.unsqueeze(0)
-                prev_cmd_vel= prev_cmd_vel.unsqueeze(0)
+            stacked_images, pcl, lcg, prev_cmd_vel =  transformer.__getitem__(0)            
+            
+            stacked_images = stacked_images.unsqueeze(0)
+            pcl = pcl.unsqueeze(0)
+            lcg = lcg.unsqueeze(0)
+            prev_cmd_vel= prev_cmd_vel.unsqueeze(0)
 
-                stacked_images = stacked_images.to(device)
-                pcl = pcl.to(device)
-                lcg= lcg.to(device)
-                prev_cmd_vel= prev_cmd_vel.to(device)
+            stacked_images = stacked_images.to(device)
+            pcl = pcl.to(device)
+            lcg= lcg.to(device)
+            prev_cmd_vel= prev_cmd_vel.to(device)
 
-                # print(stacked_images.shape)
-                # print(pcl.shape)
-                # print(lcg.shape)
-                # print(prev_cmd_vel.shape)
+            # print(stacked_images.shape)
+            # print(pcl.shape)
+            # print(lcg.shape)
+            # print(prev_cmd_vel.shape)
 
 
-                fsn_lin, fsn_anglr, img_lin, img_anglr, pcl_lin, pcl_anglr = model(stacked_images, pcl, lcg, prev_cmd_vel)
-                lin = fsn_lin.detach().cpu().numpy()[0]/(10*4)
-                anglr = fsn_anglr.detach().cpu().numpy()[0]/100
-                print(f'{lin[0]}  , {anglr[0]} \n') 
-                print(anglr[0])
-                msg = Twist()
-                msg.linear.x = lin[0]
-                msg.angular.z = anglr[0]
+            fsn_lin, fsn_anglr, img_lin, img_anglr, pcl_lin, pcl_anglr = model(stacked_images, pcl, lcg, prev_cmd_vel)
+            lin = fsn_lin.detach().cpu().numpy()[0]/10
+            anglr = fsn_anglr.detach().cpu().numpy()[0]/100
+            print(f'{lin[0]}  , {anglr[0]} \n') 
+            # print(anglr[0])
+            msg = Twist()
+            msg.linear.x = lin[0]
+            msg.angular.z = anglr[0]
 
-                print('publishing')
-                cmd_publisher.publish(msg)
+            print('publishing')
+            cmd_publisher.publish(msg)
 
         
         # previous_rbt_location.append((pos.x, pos.y, counter['index']))

@@ -43,11 +43,25 @@ def get_loss(loss_fn, lin_vel, angular_vel, gt_lin, gt_angular, data_src):
     lin_error =  loss_fn(lin_vel, gt_lin) 
     anglr_error = loss_fn(angular_vel, gt_angular)
     error = lin_error + anglr_error
-    # print(f'linear error: {lin_error}')
-    # print(f'angular error: {anglr_error}')
+    
+    lin_err_val = lin_error.item()
+    anglr_error_val = anglr_error.item()
 
-    experiment.log_metric(name = str('line_error_'+data_src), value=lin_error.item())
-    experiment.log_metric(name = str('anglr_error_'+data_src), value=anglr_error.item())
+    experiment.log_metric(name = str('line_error_'+data_src), value=lin_err_val)
+    experiment.log_metric(name = str('anglr_error_'+data_src), value=anglr_error_val)
+    
+
+    # if lin_err_val > anglr_error_val and anglr_error_val!=0:
+    #     dynamic_weight = lin_err_val / anglr_error_val
+    #     print(f'greater lin error: {dynamic_weight}')
+    #     return lin_error + (dynamic_weight * anglr_error_val)
+
+    # if anglr_error_val > lin_err_val and lin_err_val != 0:
+    #     dynamic_weight = anglr_error_val / lin_err_val
+    #     print(f'greater anglr error: {dynamic_weight}')
+    #     return (dynamic_weight*lin_error) + anglr_error
+
+
     return error
 
 
@@ -80,6 +94,12 @@ def run_validation(val_files, model, batch_size, epoch, optim):
 
                 gt_x = torch.unsqueeze(gt_cmd_vel[:,0],1)
                 gt_y = torch.unsqueeze(gt_cmd_vel[:,1],1)
+
+                # print(fsn_lin)
+                # print(fsn_anglr)
+ 
+                # print(gt_x)
+                # print(gt_y)
                 
                 error_fusion = get_loss(loss, fsn_lin, fsn_anglr, gt_x, gt_y,'fusion')
                 error_img = get_loss(loss, img_lin, img_anglr, gt_x, gt_y, 'img')
@@ -116,15 +136,20 @@ def run_validation(val_files, model, batch_size, epoch, optim):
 def run_training(train_files, val_dirs, batch_size, num_epochs):
     loss = torch.nn.MSELoss()
     model = BcFusionModel()
-    optim = torch.optim.Adadelta(model.parameters(), lr = 0.01) 
+    # ckpt = torch.load("/home/ranjan/Workspace/my_works/fusion-network/scripts/model_at_100.pth")
+    # model.load_state_dict(ckpt['model_state_dict'])
+    # model.eval()
+
+
+    optim = torch.optim.Adam(model.parameters(), lr = 0.001) 
 
     model.to(device)
-    
+    # run_validation(val_dirs, model, batch_size, 3, optim)
     
     model.train()
     val_error_at_epoch = []
     
-    # scheduler = MultiStepLR(optim, milestones=[2,12,27,42], gamma=0.1)
+    scheduler = MultiStepLR(optim, milestones=[2,12,27,42], gamma=0.1)
     epoch_loss = []
     data_dict = {}
     for epoch in range(num_epochs):
@@ -175,7 +200,7 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
                 error_img = get_loss(loss, img_lin, img_anglr, gt_x, gt_y, 'train_img')
                 error_pcl = get_loss(loss, pcl_lin, pcl_anglr, gt_x, gt_y,'train_pcl')
                 
-                error_total = error_fusion + ( 0.2 * error_img) + (0.8 * error_pcl)
+                error_total = error_fusion + error_img + error_pcl
 
                 per_file_loss_fusion.append(error_fusion.item())
                 per_file_loss_ǐmage.append(error_img.item())
@@ -197,13 +222,7 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
             experiment.log_metric(name = str(train_file.split('/')[-1]+" mod:" +'fusion'), value=np.average(per_file_loss_fusion), epoch= epoch+1)
             running_loss.append(np.average(per_file_total_loss))   
             
-            # if num_files%6 == 0:  
-            #     print("After trained on 6 files..")              
-            #     run_validation(val_dirs, model, batch_size, epoch)
-        
-        # scheduler.step()        
-
-        # epoch_loss.append(np.average(running_loss))                
+               
         print(f'================== epoch is: {epoch} and error is: {np.average(running_loss)}==================\n')
         if (epoch+1) % 2 == 0:
             val_error = run_validation(val_dirs, model, batch_size, epoch, optim)
@@ -218,8 +237,8 @@ def main():
     # train_path = "../recorded-data/sandbox"
     train_dirs = [ os.path.join(train_path, dir) for dir in os.listdir(train_path)]
     val_dirs = [ os.path.join('../recorded-data/val', dir) for dir in os.listdir('../recorded-data/val')]
-    batch_size = 4
-    epochs = 100
+    batch_size = 12
+    epochs = 250
     run_training(train_dirs, val_dirs, batch_size, epochs)
 
 

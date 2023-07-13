@@ -39,9 +39,7 @@ class ApplyTransformation(Dataset):
         self.input_data = input_data    
         self.image_transforms = transforms.Compose([
                     transforms.ToTensor(),
-                    transforms.Resize((224,224),antialias=True),
-                    # transforms.Normalize(mean=[0.485, 0.456, 0.406],  # ImageNet mean hardcoded
-                    #                       std=[0.229, 0.224, 0.225])  # ImageNet std hardcoded
+                    transforms.Resize((224,224),antialias=True)
             ])
     
     def __len__(self):
@@ -81,10 +79,10 @@ class ApplyTransformation(Dataset):
         # print(prev_cmd_vel)
         lin_and_angular = np.concatenate([perv_linear, prev_anglular], axis=1)
         # print(lin_and_angular.shape)
-        gt_cmd_vel = (self.gt_cmd_vel[0], self.gt_cmd_vel[2])
+        # gt_cmd_vel = (100 * self.gt_cmd_vel[0], 1000 * np.around(self.gt_cmd_vel[2], 3))
+        gt_cmd_vel = (self.gt_cmd_vel[0], np.around(self.gt_cmd_vel[2], 2))
         local_goal = torch.tensor(local_goal, dtype=torch.float32).ravel()
 
-        
         prev_cmd_vel = torch.tensor(lin_and_angular, dtype=torch.float32).ravel()
         gt_cmd_vel = torch.tensor(gt_cmd_vel, dtype=torch.float32).ravel()
 

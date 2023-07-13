@@ -26,11 +26,11 @@ class IndexDataset(Dataset):
 
     def __len__(self):
         # As images and point clouds will be in sets of 4
-        return int(len(self.content.keys()) / 4)
+        return int(len(self.content.keys()) - 4)
     
     def __getitem__(self, offset_index) :
         # We are taking 4 sequential images, point clouds each time to account for temporal variation
-        start_index = offset_index * 4
+        start_index = offset_index
         end_index = start_index + 3
 
         # Get data from respective index
