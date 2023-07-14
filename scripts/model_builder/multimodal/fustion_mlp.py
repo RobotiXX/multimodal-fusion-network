@@ -13,14 +13,15 @@ class FusionMLP(nn.Module):
 
         super().__init__()
 
-        self.linear1 = nn.Linear(745471, 512)
-        self.linear2 = nn.Linear(490581,256)
-        self.linear3 = nn.Linear(124344,256)
-        self.linear4 = nn.Linear(4*128, 1024)
-        self.linear5 = nn.Linear(1024,1)
+
+        self.linear1 = nn.Linear(220000+41472, 512)
+        self.linear2 = nn.Linear(176000+20736+512,256)
+        self.linear3 = nn.Linear(132000+25088+256,256)
+        self.linear4 = nn.Linear(4*128, 512)
+        self.linear5 = nn.Linear(512,1)
 
         self.angular = nn.Sequential(
-            nn.Linear(1024,64),
+            nn.Linear(512,64),
             # nn.BatchNorm1d(64),
             nn.ReLU(),
             nn.Linear(64,1)

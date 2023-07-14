@@ -28,8 +28,8 @@ class BcFusionModel(nn.Module):
         
         self.backbone_pcl = PointNetDenseFusionModel().float()
         self.backbone_img = ImageFusionModel(backbone=backbone_img, n_frames= n_frames, n_channels=n_channels)
-        self.goal_encoder = make_mlp(goal_encoder, act, l_act, bn, dropout)
-        self.prev_cmd_encoder = make_mlp(prev_cmd_encoder, act, l_act, bn, dropout)
+        self.goal_encoder = make_mlp(goal_encoder, act, l_act, False, dropout)
+        self.prev_cmd_encoder = make_mlp(prev_cmd_encoder, act, l_act, False, dropout)
 
         self.mx_pool_lyr2_img = nn.MaxPool2d(kernel_size= 4, stride=3)
         self.mx_pool_lyr3_img = nn.MaxPool2d(kernel_size= 2, stride=3)
@@ -62,14 +62,18 @@ class BcFusionModel(nn.Module):
         pooled_lyr3_img = pooled_lyr3_img.contiguous().view(pooled_lyr3_img.shape[0], -1)
         
 
-        pooled_lyr1_pcl = self.mx_pool_lyr1_pcl(intr_pts_rep[0])
-        pooled_lyr2_pcl = self.mx_pool_lyr2_pcl(intr_pts_rep[1])
-        pooled_lyr3_pcl = self.mx_pool_lyr3_pcl(point_cloud_feat)
+        pooled_lyr1_pcl = intr_pts_rep[0]
+        pooled_lyr2_pcl = intr_pts_rep[1]
+        pooled_lyr3_pcl = point_cloud_feat
 
+        print(f'pcl:{pooled_lyr1_pcl.shape}, image:{pooled_lyr1_img.shape}')
+        print(f'pcl:{pooled_lyr2_pcl.shape}, image:{pooled_lyr2_img.shape}')
+        print(f'pcl:{pooled_lyr3_pcl.shape}, image:{pooled_lyr3_img.shape}')
 
         fusion_input1 = torch.cat([pooled_lyr1_img, pooled_lyr1_pcl], dim=1)
         fusion_input2 = torch.cat([pooled_lyr2_img, pooled_lyr2_pcl], dim=1)
         fusion_input3 = torch.cat([pooled_lyr3_img, pooled_lyr3_pcl], dim=1)
+
 
 
         predict_fusion_model_lin, predict_fusion_model_angular = self.fusion_mlp(fusion_input1, fusion_input2, fusion_input3, goal, prev_cmd)
