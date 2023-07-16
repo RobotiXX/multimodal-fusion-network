@@ -14,7 +14,7 @@ class ImageMLP(nn.Module):
         super().__init__()
 
         self.common = nn.Sequential(
-            nn.Linear(512+128+128,128),
+            nn.Linear(512+128,128),
             # nn.BatchNorm1d(128),
             nn.LeakyReLU(),
             nn.Linear(128,64),

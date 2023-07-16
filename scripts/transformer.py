@@ -49,7 +49,7 @@ class ApplyTransformation(Dataset):
         self.point_clouds = data['pcl']
         self.local_goal = data['local_goal']
         self.prev_cmd_vel = data['prev_cmd_vel']        
-        # self.robot_position  = data[4]
+        self.robot_position  = data['robot_pos']
         # self.gt_cmd_vel = data[5]
         
 
@@ -62,9 +62,20 @@ class ApplyTransformation(Dataset):
         # Transform point-clouds to 3D-Cylider co-ordinate system
         point_clouds = np.concatenate(self.point_clouds, axis=0)   
 
-    
-        local_goal = torch.tensor(self.local_goal, dtype=torch.float32).ravel()
-        local_goal = (local_goal - local_goal.min()) / (local_goal.max() - local_goal.min())
+        robot_coordinate_in_glob_frame = get_transformation_matrix(self.robot_position[0],self.robot_position[1])
+        transform_to_robot_coordinate =   np.linalg.pinv(robot_coordinate_in_glob_frame)
+
+        local_goal_in_robot_frame = transform_to_robot_coordinate @ np.asanyarray([self.local_goal[0], self.local_goal[1],1]).reshape((3,1))
+        robot_curr_pos = transform_to_robot_coordinate @ np.asanyarray([self.robot_position[0].x, self.robot_position[0].y,1]).reshape((3,1))		
+        
+        robot_curr_pos = (robot_curr_pos[0,0], robot_curr_pos[1,0])
+        
+        local_goal = (local_goal_in_robot_frame[0,0], local_goal_in_robot_frame[1,0])            
+        
+        print(f'transformed: {local_goal}')
+        print(f'robotpos transformed: {robot_curr_pos}')
+
+        local_goal = torch.tensor(local_goal, dtype=torch.float32).ravel()
 
         prev_cmd_vel = torch.tensor(self.prev_cmd_vel, dtype=torch.float32).ravel()
 

@@ -40,11 +40,11 @@ def odom_callback(odom):
     
 
     for idx, robot_pos in enumerate(previous_rbt_location):
-        # if the current odom position is with in 10meter radius of a previous position
+        # if the current odom position is with in 10 meter radius of a previous position
         # then use current point as a local goal of the previous position(robot's prev location)
         # TODO: should be done as a perpendicular intersection instead of delta approximation of 2
 
-        if ((robot_pos[0] - position.x) ** 2 + (robot_pos[1] - position.y) ** 2 ) >= 100:
+        if ((robot_pos[0] - position.x) ** 2 + (robot_pos[1] - position.y) ** 2 ) >= 8.9:
             play_back_snapshot[robot_pos[2]]["local_goal"] = (position.x, position.y)
             # print("local goal foudn for index", robot_pos[2])
             del previous_rbt_location[idx]
@@ -96,7 +96,8 @@ def aprrox_sync_callback(lidar, rgb, odom, joy):
         prev_cmd_vel = get_prev_cmd_val().copy()
         prev_cmd_vel.pop(0)
         prev_cmd_vel.pop(0)
-        robot_pos = (pos, odom.pose.pose.orientation, counter['index'])
+        orientation = odom.pose.pose.orientation
+        robot_pos = ([pos.x, pos.y, pos.z], [orientation.x, orientation.y, orientation.z, orientation.w], counter['index'])
         # Record data at current point
         gt_cmd_vel = (
             getJoystickValue(joy_axes[4], -1.6),
@@ -107,7 +108,6 @@ def aprrox_sync_callback(lidar, rgb, odom, joy):
         # print(prev_cmd_vel)
         play_back_snapshot[counter['index']] = {
             "point_cloud": point_cloud,
-            "prev_cmd_vel_len": len(prev_cmd_vel),
             "prev_cmd_vel": prev_cmd_vel,
             "robot_position": robot_pos,
             "gt_cmd_vel": gt_cmd_vel

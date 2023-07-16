@@ -81,15 +81,19 @@ def run_validation(val_files, model, batch_size, epoch, optim):
                 gt_x = torch.unsqueeze(gt_cmd_vel[:,0],1)
                 gt_y = torch.unsqueeze(gt_cmd_vel[:,1],1)
 
-                # print(fsn_lin/100)
-                # print(fsn_anglr/1000)
- 
-                # print(gt_x)
-                # print(gt_y)
+                print("------\n predicted")
+
+                print(fsn_lin/100)
+                print(fsn_anglr/5000)
                 
-                error_fusion = get_loss(loss, fsn_lin/100, fsn_anglr/1000, gt_x, gt_y,'fusion')
-                error_img = get_loss(loss, img_lin/100, img_anglr/1000, gt_x, gt_y, 'img')
-                error_pcl = get_loss(loss, pcl_lin/100, pcl_anglr/1000, gt_x, gt_y, 'pcl')
+                print(" gt")
+                print(gt_x)
+                print(gt_y)
+                
+                print("\n\n")
+                error_fusion = get_loss(loss, fsn_lin/100, fsn_anglr/5000, gt_x, gt_y,'fusion')
+                error_img = get_loss(loss, img_lin/100, img_anglr/5000, gt_x, gt_y, 'img')
+                error_pcl = get_loss(loss, pcl_lin/100, pcl_anglr/5000, gt_x, gt_y, 'pcl')
                 
                 error_total = error_fusion + ( 0.2 * error_img) + (0.8 * error_pcl)
 
@@ -122,7 +126,7 @@ def run_validation(val_files, model, batch_size, epoch, optim):
 def run_training(train_files, val_dirs, batch_size, num_epochs):
     loss = torch.nn.MSELoss()
     model = BcFusionModel()
-    ckpt = torch.load("/home/ranjan/Workspace/my_works/fusion-network/scripts/prev_model_at_30.pth")
+    ckpt = torch.load("/home/ranjan/Workspace/my_works/fusion-network/scripts/model_at_100.pth")
     model.load_state_dict(ckpt['model_state_dict'])
     # model.eval()
 
@@ -223,9 +227,9 @@ def main():
     # train_path = "../recorded-data/sandbox"
     train_dirs = [ os.path.join(train_path, dir) for dir in os.listdir(train_path)]
     val_dirs = [ os.path.join('../recorded-data/val', dir) for dir in os.listdir('../recorded-data/val')]
-    batch_size = 1
+    batch_size = 2
     epochs = 250 
-    run_training(train_dirs, val_dirs, 1, epochs)
+    run_training(train_dirs, val_dirs, batch_size, epochs)
 
 
 

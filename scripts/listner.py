@@ -22,7 +22,7 @@ from model_builder.multimodal.fusion_net  import BcFusionModel
 
 counter = {'index': 0, 'sub-sampler': 1}
 previous_rbt_location = []
-previous_velocities = []
+previous_velocities = np.zeros((20,2))
 play_back_snapshot = {}
 image_history = []
 pcl_history = []
@@ -30,7 +30,7 @@ pcl_history = []
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 print(f'loading model..')
-ckpt = torch.load("/home/ranjan/Workspace/my_works/fusion-network/scripts/model_at_60.pth")
+ckpt = torch.load("/home/ranjan/Workspace/my_works/fusion-network/scripts/model_at_100.pth")
 print(f'model loaded')
 model = BcFusionModel()
 model.load_state_dict(ckpt['model_state_dict'])
@@ -38,17 +38,17 @@ model.to(device)
 model.eval()
 constant_goal = None
 
-def odom_callback(odom):
-    position = odom.pose.pose.position
-    cmd_vel = odom.twist.twist
+# def odom_callback(odom):
+#     position = odom.pose.pose.position
+#     cmd_vel = odom.twist.twist
 
-    # print((cmd_vel.linear.x, cmd_vel.angular.z))
-    # store 20 latest liner and angular velocities
-    previous_velocities.insert(0, (cmd_vel.linear.x, cmd_vel.angular.z))
-    if len(previous_velocities) > 20:
-        previous_velocities.pop()
+#     # print((cmd_vel.linear.x, cmd_vel.angular.z))
+#     # store 20 latest liner and angular velocities
+#     previous_velocities.insert(0, (cmd_vel.linear.x, cmd_vel.angular.z))
+#     if len(previous_velocities) > 20:
+#         previous_velocities.pop()
 
-    return
+    # return
 
 
 def get_lidar_points(lidar):
@@ -98,7 +98,7 @@ def aprrox_sync_callback(lidar, rgb, odom):
     cmd_vel = odom.twist.twist
     # This function is called at 10Hz
     # Subsampling at each 5th second approx
-    if counter['sub-sampler'] % 6 == 0:
+    if counter['sub-sampler'] % 4 == 0:
         # TODO: these 4 values will be pickled at index counter['index'] except image
         img = store_image(rgb)
         
@@ -123,7 +123,6 @@ def aprrox_sync_callback(lidar, rgb, odom):
             pcl_history.pop(0)
 
         # print("after len image hisotry", len(pcl_history))
-        prev_cmd_vel = get_prev_cmd_val()
         # prev_cmd_vel.pop()
         
         
@@ -137,11 +136,14 @@ def aprrox_sync_callback(lidar, rgb, odom):
             # print_image(image_history, counter['index'])
             local_goal = get_goal()
             # print(f'local goal {local_goal}')
+            robot_pos = (pos, odom.pose.pose.orientation)
+            
             align_content = {
                 "pcl": filtered_pcl,
                 "images": image_history,
-                "prev_cmd_vel": prev_cmd_vel,
-                "local_goal": local_goal
+                "prev_cmd_vel": previous_velocities,
+                "local_goal": local_goal,
+                "robot_pos": robot_pos
             }
 
             transformer = ApplyTransformation(align_content)
@@ -162,18 +164,20 @@ def aprrox_sync_callback(lidar, rgb, odom):
             # print(lcg.shape)
             # print(prev_cmd_vel.shape)
 
+            with torch.no_grad():
+                fsn_lin, fsn_anglr, img_lin, img_anglr, pcl_lin, pcl_anglr = model(stacked_images, pcl, lcg, prev_cmd_vel)
+                lin = fsn_lin.detach().cpu().numpy()[0]/100
+                anglr = fsn_anglr.detach().cpu().numpy()[0]/5000
+                print(f'unscaled: {lin[0]}  , {anglr[0]} \n') 
+                # print(anglr[0])
+                msg = Twist()
+                msg.linear.x = lin[0]
+                msg.angular.z = anglr[0]
 
-            fsn_lin, fsn_anglr, img_lin, img_anglr, pcl_lin, pcl_anglr = model(stacked_images, pcl, lcg, prev_cmd_vel)
-            lin = fsn_lin.detach().cpu().numpy()[0]/10
-            anglr = fsn_anglr.detach().cpu().numpy()[0]/100
-            print(f'{lin[0]}  , {anglr[0]} \n') 
-            # print(anglr[0])
-            msg = Twist()
-            msg.linear.x = lin[0]
-            msg.angular.z = anglr[0]
-
-            print('publishing')
-            cmd_publisher.publish(msg)
+                cmd_publisher.publish(msg)
+                previous_velocities[1:,:] = previous_velocities[0:-1,:]
+                previous_velocities[0,0] = lin[0]
+                previous_velocities[0,1] = anglr[0]
 
         
         # previous_rbt_location.append((pos.x, pos.y, counter['index']))
@@ -209,7 +213,7 @@ lc_goal = message_filters.Subscriber('/move_base_simple/goal', PoseStamped)
 ts = message_filters.ApproximateTimeSynchronizer([lidar, rgb, odom], 100, 0.05, allow_headerless=True)
 
 ts.registerCallback(aprrox_sync_callback)
-odom.registerCallback(odom_callback)
+# odom.registerCallback(odom_callback)
 lc_goal.registerCallback(set_lc_goal)
 
 

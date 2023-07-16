@@ -17,8 +17,8 @@ from torch.optim.lr_scheduler import MultiStepLR
 # Create an experiment with your api key
 experiment = Experiment(
     api_key="Ly3Tc8W7kfxPmAxsArJjX9cgo",
-    project_name= "multimodal-net-with-rnn",
-    # project_name="kk",
+    # project_name= "multimodal-net-with-rnn",
+    project_name="kkk",
     workspace="bhabaranjan",
 )
 
@@ -36,7 +36,7 @@ def get_data_loader(input_file_path, read_type, batch_size):
     logging.info(f'Reading {read_type} file from path {input_file_path}')
     indexer = IndexDataset(input_file_path)
     transformer = ApplyTransformation(indexer)
-    data_loader = DataLoader(transformer, batch_size = batch_size, drop_last=True)
+    data_loader = DataLoader(transformer, batch_size = batch_size, drop_last=False)
     return data_loader
 
 def get_loss(loss_fn, lin_vel, angular_vel, gt_lin, gt_angular, data_src):
@@ -170,11 +170,11 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
                 gt_x = torch.unsqueeze(gt_cmd_vel[:,0],1)
                 gt_y = torch.unsqueeze(gt_cmd_vel[:,1],1)
 
-                print(fsn_lin)
-                print(fsn_anglr)
+                # print(fsn_lin)
+                # print(fsn_anglr)
 
-                print(gt_x)
-                print(gt_y)
+                # print(gt_x)
+                # print(gt_y)
                 
                 error_fusion = get_loss(loss, fsn_lin, fsn_anglr, gt_x, gt_y,'train_fusion')
                 error_img = get_loss(loss, img_lin, img_anglr, gt_x, gt_y, 'train_img')
@@ -217,7 +217,7 @@ def main():
     # train_path = "../recorded-data/sandbox"
     train_dirs = [ os.path.join(train_path, dir) for dir in os.listdir(train_path)]
     val_dirs = [ os.path.join('../recorded-data/val', dir) for dir in os.listdir('../recorded-data/val')]
-    batch_size = 22
+    batch_size = 48
     epochs = 250
     run_training(train_dirs, val_dirs, batch_size, epochs)
 

@@ -14,36 +14,26 @@ class FusionMLP(nn.Module):
         super().__init__()
 
 
-        self.linear1 = nn.Linear(220000+41472, 512)
-        self.linear2 = nn.Linear(176000+20736+512,256)
-        self.linear3 = nn.Linear(132000+25088+256,256)
-        self.linear4 = nn.Linear(4*128, 512)
+        self.linear1 = nn.Linear(60000+41472, 512)
+        self.linear2 = nn.Linear(48000+20736+512,256)
+        self.linear3 = nn.Linear(36000+25088+256,256)
+        self.linear4 = nn.Linear(3*128, 512)
         self.linear5 = nn.Linear(512,1)
 
         self.angular = nn.Sequential(
             nn.Linear(512,64),
-            # nn.BatchNorm1d(64),
             nn.ReLU(),
             nn.Linear(64,1)
         )
         
 
-        # self.bn1 = nn.BatchNorm1d(512)
-        # self.bn2 = nn.BatchNorm1d(256)
-        # self.bn3 = nn.BatchNorm1d(256)
-        # self.bn4 = nn.BatchNorm1d(1024)
-        # self.bn5 = nn.BatchNorm1d(32)
-        # self.bn6 = nn.BatchNorm1d(16)
-
         self.act1 = nn.LeakyReLU()
         self.act2 = nn.LeakyReLU()
         self.act3 = nn.LeakyReLU()
         self.act4 = nn.ReLU()
-        self.act5 = nn.ReLU()
-        self.act6 = nn.ReLU()
 
 
-    def forward(self, input_l1, input_l2, input_l3, goal, prev_cmd_vel):
+    def forward(self, input_l1, input_l2, input_l3, goal):
         
         x = self.linear1(input_l1)
         x = self.act1(x)        
@@ -58,7 +48,7 @@ class FusionMLP(nn.Module):
         x = self.act3(x)   
       
         # print(x.shape,goal.shape, prev_cmd_vel.shape)
-        x = torch.cat([x, goal, prev_cmd_vel], dim=-1)
+        x = torch.cat([x, goal], dim=-1)
         x = self.linear4(x)
         x_shared = self.act4(x)  
 
