@@ -217,7 +217,7 @@ def main():
     # train_path = "../recorded-data/sandbox"
     train_dirs = [ os.path.join(train_path, dir) for dir in os.listdir(train_path)]
     val_dirs = [ os.path.join('../recorded-data/val', dir) for dir in os.listdir('../recorded-data/val')]
-    batch_size = 48
+    batch_size = 22
     epochs = 250
     run_training(train_dirs, val_dirs, batch_size, epochs)
 

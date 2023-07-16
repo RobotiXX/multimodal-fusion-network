@@ -1,7 +1,7 @@
 import pickle
 import coloredlogs, logging
 import os
-from random import shuffle
+
 from torch.utils.data import Dataset
 coloredlogs.install()
 
@@ -43,21 +43,22 @@ class IndexDataset(Dataset):
         image_paths = [ os.path.join(self.root_path, str(i)+'.jpg') for i in range(start_index, end_index+1) ]
         
         # only keep points that are under 5 + 1 (delta) meters from the robot
-        filtered_points = []
-        grnd_pts = []
+        point_clouds = []
         # print(list(self.content.keys()), start_index, end_index)
-        for point_snapshot in range(start_index, end_index+1):            
+        for point_snapshot in range(start_index, end_index+1):
+            filtered_points = []
+            ground_pts = []
             for point in self.content[point_snapshot]['point_cloud']:
-                if point[2] >= 0.01 and (point[0]**2 + point[1]**2 + point[2]**2) <= 150:                    
-                    filtered_points.append(point)   
-                if point[2] < 0.01 and (point[0]**2 + point[1]**2 + point[2]**2) <= 49:                    
-                    grnd_pts.append(point)         
+                if point[2] >= 0.01 and point[2] < 1.6 and (point[0]**2 + point[1]**2 + point[2]**2) <= 49:
+                    filtered_points.append(point)
+                if point[2] < 0.01 and (point[0]**2 + point[1]**2 + point[2]**2) <= 49:
+                    ground_pts.append(point)    
+            
+            if len(filtered_points) < 5500:
+                sortage = 5500 - len(filtered_points)
+                filtered_points.extend(ground_pts[ -sortage: ])
 
-        filtered_points = filtered_points[-6000:]
+            point_clouds.append(filtered_points[:5500])                
 
-        if len(filtered_points) < 6000:
-            shortage = 6000 - len(filtered_points)
-            print(f'shortage points: {shortage}')
-            filtered_points.extend(grnd_pts[-shortage:])
 
-        return (image_paths, filtered_points, local_goal, prev_cmd_vel, robot_position, gt_cmd_vel)
+        return (image_paths, point_clouds, local_goal, prev_cmd_vel, robot_position, gt_cmd_vel)
