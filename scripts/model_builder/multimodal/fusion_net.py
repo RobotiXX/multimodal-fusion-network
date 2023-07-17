@@ -5,6 +5,7 @@ import torch.nn as nn
 from ..image.backbone import make_mlp
 from ..image.backbone_fusion import ImageFusionModel
 from ..pcl.pointnet_fusion import PointNetDenseFusionModel
+from ..pcl.pointnet_backbone import PclBackbone
 from .fustion_mlp import FusionMLP
 from .pcl_mlp import PclMLP
 from .image_mlp import ImageMLP
@@ -26,7 +27,7 @@ class BcFusionModel(nn.Module):
 
         super().__init__()
         
-        self.backbone_pcl = PointNetDenseFusionModel().float()
+        self.backbone_pcl = PclBackbone()
         self.backbone_img = ImageFusionModel(backbone=backbone_img, n_frames= n_frames, n_channels=n_channels)
         self.goal_encoder = make_mlp(goal_encoder, act, l_act, False, dropout)
         # self.prev_cmd_encoder = make_mlp(prev_cmd_encoder, act, l_act, False, dropout)
@@ -81,7 +82,7 @@ class BcFusionModel(nn.Module):
         input_image_features = torch.cat([imgs_feat, goal],dim=-1)
         img_lin, img_angular = self.controller_img(input_image_features)
 
-        input_pcl_features = torch.cat([point_cloud_feat, goal],dim=-1)
+        input_pcl_features = torch.cat([pooled_lyr1_pcl, goal],dim=-1)
         pcl_lin, pcl_angular = self.controller_pcl(input_pcl_features)
 
 

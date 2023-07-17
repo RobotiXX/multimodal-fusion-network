@@ -20,11 +20,6 @@ class PointNetDenseFusionModel(nn.Module):
         self.conv2 = torch.nn.Conv1d(12, 10, 1)
         self.conv3 = torch.nn.Conv1d(10, 8, 1)
         self.conv4 = torch.nn.Conv1d(8, 6, 1)
-        # self.bn1 = nn.BatchNorm1d(512)
-        # self.bn2 = nn.BatchNorm1d(256)
-        # self.bn3 = nn.BatchNorm1d(128)
-        # self.mxpool_cv2 = nn.MaxPool1d(2, 2)
-        # self.mxpool_cv3 = nn.MaxPool1d(2, 2)
 
     def forward(self, x):
         batchsize = x.size()[0]

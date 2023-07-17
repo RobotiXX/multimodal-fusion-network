@@ -49,10 +49,11 @@ class IndexDataset(Dataset):
             filtered_points = []
             ground_pts = []
             for point in self.content[point_snapshot]['point_cloud']:
-                if point[2] >= 0.01 and point[2] < 1.6 and (point[0]**2 + point[1]**2 + point[2]**2) <= 49:
+                if point[2] >= 0.01 and point[2] < 1.8 and (point[0]**2 + point[1]**2 + point[2]**2) <= 49:
                     filtered_points.append(point)
-                if point[2] < 0.01 and (point[0]**2 + point[1]**2 + point[2]**2) <= 49:
-                    ground_pts.append(point)    
+                else :
+                    if (point[0]**2 + point[1]**2 + point[2]**2) <= 49:
+                        ground_pts.append(point)    
             
             if len(filtered_points) < 5500:
                 sortage = 5500 - len(filtered_points)

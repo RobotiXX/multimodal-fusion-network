@@ -9,6 +9,7 @@ import tf
 
 from torch.utils.data import Dataset
 from scipy.spatial.transform import Rotation as R
+from .transformer_pcl import get_voxelized_points
 
 coloredlogs.install()
 
@@ -69,15 +70,9 @@ class ApplyTransformation(Dataset):
         local_goal_rbt_frame = np.matmul(tf_matrix, np.array([self.local_goal[0], self.local_goal[1],0,1]).reshape(4,1))
         
         local_goal = (local_goal_rbt_frame[0,0], local_goal_rbt_frame[1,0], 0, 0)
-        # robot_curr_pos = (0, robot_curr_pos[1,0])
-        # Transform point-clouds to 3D-Cylider co-ordinate system
-        # x= np.matmul(tf_matrix, np.array([self.robot_position[0][0], self.robot_position[0][1],self.robot_position[0][2],1]).reshape(4,1))
-        # print(f'matrix: {tf_matrix}')
-        # print(f'robot pos: {self.robot_position}') 
-        # print(f'local_goal: {self.local_goal}')
-        # print(f'matmul: {x}')
-        # print(f'tf_local_goal: {local_goal}')
+
         point_clouds = np.concatenate(self.point_clouds, axis=0)   
+        point_clouds = get_voxelized_points(point_clouds)
         # if point_clouds.shape[0] != 6000:
         #     print(f'pint_cloud {point_clouds.shape}')
 
@@ -96,9 +91,6 @@ class ApplyTransformation(Dataset):
 
         prev_cmd_vel = torch.tensor(lin_and_angular, dtype=torch.float32).ravel()
         gt_cmd_vel = torch.tensor(gt_cmd_vel, dtype=torch.float32).ravel()
-
-        point_clouds =  torch.tensor(point_clouds)
-        point_clouds = torch.t(point_clouds)
 
         return (stacked_images, point_clouds, local_goal, prev_cmd_vel, gt_cmd_vel)
 
