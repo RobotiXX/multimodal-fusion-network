@@ -14,7 +14,7 @@ class FusionMLP(nn.Module):
         super().__init__()
 
 
-        self.linear1 = nn.Linear(221184+41472, 512)
+        self.linear1 = nn.Linear( +41472, 512)
         self.linear2 = nn.Linear(64000+20736+512,256)
         self.linear3 = nn.Linear(32000+25088+256,256)
         self.linear4 = nn.Linear(3*128, 512)

@@ -17,37 +17,45 @@ class PclMLP(nn.Module):
         self.backbone_pcl = PclBackbone()
 
         self.common = nn.Sequential(
-            nn.Linear(55296+128,1024),
+            nn.Linear(262144,512),
             # nn.BatchNorm1d(128),
             nn.LeakyReLU(),
-            nn.Linear(1024,512),
+            nn.Linear(512,512),
             # nn.BatchNorm1d(64),
             nn.LeakyReLU(),
-            nn.Linear(512,128),
+            nn.Linear(512,256),
             # nn.BatchNorm1d(64),
             nn.LeakyReLU(),
-            nn.Linear(128,32),
-            # nn.BatchNorm1d(32),
-            nn.ReLU()
         )
 
-        self.goal_encoder = make_mlp( [4, 256, 128], 'relu', False, False, 0.0)
+        self.goal_encoder = make_mlp( [4, 128, 64], 'relu', False, False, 0.0)
 
-        self.linear_vel = nn.Linear(32,1)
-        self.angular_vel = nn.Linear(32,1)
+        self.shared_feat_encod_goal = nn.Sequential(
+            nn.Linear(256+64,64),
+            # nn.BatchNorm1d(32),
+            nn.LeakyReLU()
+        )
+        
+        self.linear_vel = nn.Linear(64,1)
+
+        self.angular_vel =  nn.Sequential(
+         nn.Linear(64,32),
+         nn.LeakyReLU(),
+         nn.Linear(32,1))
 
     def forward(self, input, goal):
 
         point_cloud_feat = self.backbone_pcl(input.float())
-        
+        feat_shared = self.common(point_cloud_feat)
 
         goal = self.goal_encoder(goal)
-        input = torch.cat([point_cloud_feat, goal],dim=-1)
 
-        feat_shared = self.common(input)
+        input = torch.cat([feat_shared, goal],dim=-1)
 
-        x = self.linear_vel(feat_shared)
-        y = self.angular_vel(feat_shared)
+        goal_encoded_shared_input = self.shared_feat_encod_goal(input)
+
+        x = self.linear_vel(goal_encoded_shared_input)
+        y = self.angular_vel(goal_encoded_shared_input)
           
         return x, y
 

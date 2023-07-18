@@ -71,13 +71,9 @@ class ApplyTransformation(Dataset):
         
         local_goal = (local_goal_rbt_frame[0,0], local_goal_rbt_frame[1,0], 0, 0)
 
-        point_clouds = np.concatenate(self.point_clouds, axis=0)   
+        point_clouds = np.array(self.point_clouds[3])   
         point_clouds = get_voxelized_points(point_clouds)
-        # if point_clouds.shape[0] != 6000:
-        #     print(f'pint_cloud {point_clouds.shape}')
 
-        
-        # print(f'gt_velocity: {self.gt_cmd_vel}')
 
         prev_cmd_vel = np.array(self.prev_cmd_vel, dtype=np.float64)
         perv_linear = np.expand_dims(prev_cmd_vel[:,0], axis=1)
