@@ -17,31 +17,28 @@ class PclMLP(nn.Module):
         self.backbone_pcl = PclBackbone()
 
         self.common = nn.Sequential(
-            nn.Linear(262144,512),
+            nn.Linear(42592,128),
             # nn.BatchNorm1d(128),
             nn.LeakyReLU(),
-            nn.Linear(512,512),
+            nn.Linear(128,64),
             # nn.BatchNorm1d(64),
-            nn.LeakyReLU(),
-            nn.Linear(512,256),
-            # nn.BatchNorm1d(64),
-            nn.LeakyReLU(),
+            nn.LeakyReLU()            
         )
 
-        self.goal_encoder = make_mlp( [4, 128, 64], 'relu', False, False, 0.0)
+        self.goal_encoder = make_mlp( [4, 64, 16], 'relu', False, False, 0.0)
 
         self.shared_feat_encod_goal = nn.Sequential(
-            nn.Linear(256+64,64),
+           nn.Linear(64+16,16),
             # nn.BatchNorm1d(32),
             nn.LeakyReLU()
         )
         
-        self.linear_vel = nn.Linear(64,1)
+        self.linear_vel = nn.Linear(16,1)
 
         self.angular_vel =  nn.Sequential(
-         nn.Linear(64,32),
+         nn.Linear(16,8),
          nn.LeakyReLU(),
-         nn.Linear(32,1))
+         nn.Linear(8,1))
 
     def forward(self, input, goal):
 

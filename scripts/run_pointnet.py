@@ -19,7 +19,7 @@ from torch.optim.lr_scheduler import MultiStepLR
 experiment = Experiment(
     api_key="Ly3Tc8W7kfxPmAxsArJjX9cgo",
     # project_name= "multimodal-net-with-rnn",
-    # project_name="kkk",
+    project_name="kkk",
     workspace="bhabaranjan",
 )
 
@@ -127,7 +127,7 @@ def run_validation(val_files, model, batch_size, epoch, optim):
 def run_training(train_files, val_dirs, batch_size, num_epochs):
     loss = torch.nn.MSELoss()
     model = PclMLP()
-    optim = torch.optim.Adam(model.parameters(), lr = 0.001) 
+    optim = torch.optim.Adam(model.parameters(), lr = 0.00001) 
 
     model.to(device)
 
@@ -218,7 +218,7 @@ def main():
     # train_path = "../recorded-data/sandbox"
     train_dirs = [ os.path.join(train_path, dir) for dir in os.listdir(train_path)]
     val_dirs = [ os.path.join('../recorded-data/val', dir) for dir in os.listdir('../recorded-data/val')]
-    batch_size = 1
+    batch_size = 30
     epochs = 250
     run_training(train_dirs, val_dirs, batch_size, epochs)
 
