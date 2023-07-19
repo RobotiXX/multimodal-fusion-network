@@ -127,7 +127,7 @@ def run_validation(val_files, model, batch_size, epoch, optim):
 def run_training(train_files, val_dirs, batch_size, num_epochs):
     loss = torch.nn.MSELoss()
     model = PclMLP()
-    optim = torch.optim.Adam(model.parameters(), lr = 0.00001) 
+    optim = torch.optim.Adam(model.parameters(), lr = 0.0000001) 
 
     model.to(device)
 
@@ -218,7 +218,7 @@ def main():
     # train_path = "../recorded-data/sandbox"
     train_dirs = [ os.path.join(train_path, dir) for dir in os.listdir(train_path)]
     val_dirs = [ os.path.join('../recorded-data/val', dir) for dir in os.listdir('../recorded-data/val')]
-    batch_size = 30
+    batch_size = 26
     epochs = 250
     run_training(train_dirs, val_dirs, batch_size, epochs)
 

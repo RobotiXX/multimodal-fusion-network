@@ -46,10 +46,9 @@ class IndexDataset(Dataset):
         point_clouds = []
         # print(list(self.content.keys()), start_index, end_index)
         for point_snapshot in range(start_index, end_index+1):
-            filtered_points = []
-            ground_pts = []
+            filtered_points = []            
             for point in self.content[point_snapshot]['point_cloud']:
-                if point[0] >= -1 and point[0] <= 5 and point[1]>=-3 and point[1]<=3:
+                if point[0] >= -1 and point[0] <= 5 and point[1]>=-3 and point[1]<=3 and point[2] >= 0.0299 and point[2] <= 6.0299:
                     filtered_points.append(point)                           
 
             point_clouds.append(filtered_points)                

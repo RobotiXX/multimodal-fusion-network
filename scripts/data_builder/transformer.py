@@ -81,8 +81,8 @@ class ApplyTransformation(Dataset):
         # print(prev_cmd_vel)
         lin_and_angular = np.concatenate([perv_linear, prev_anglular], axis=1)
         # print(lin_and_angular.shape)
-        gt_cmd_vel = (100 * self.gt_cmd_vel[0], 5000 * np.around(self.gt_cmd_vel[2], 3))
-        # gt_cmd_vel = (self.gt_cmd_vel[0], np.around(self.gt_cmd_vel[2], 2))
+        # gt_cmd_vel = (100 * self.gt_cmd_vel[0], 5000 * np.around(self.gt_cmd_vel[2], 3))
+        gt_cmd_vel = (self.gt_cmd_vel[0], np.around(self.gt_cmd_vel[2], 2))
         local_goal = torch.tensor(local_goal, dtype=torch.float32).ravel()
 
         prev_cmd_vel = torch.tensor(lin_and_angular, dtype=torch.float32).ravel()

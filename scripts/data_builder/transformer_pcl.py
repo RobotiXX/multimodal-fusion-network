@@ -18,21 +18,31 @@ def scale_min_max(points,min_val=0, max_val=6):
 
 def get_voxelized_points(points_array):
     # Define the grid dimensions
-    grid_size = 201  # Adjust based on your requirements
+    grid_size = 121  # Adjust based on your requirements
+
+    # Create an empty voxel grid
+    voxel_grid = np.zeros((grid_size, grid_size, grid_size))    
 
     # Calculate the voxel size based on the grid dimensions
-    voxel_size = 0.03
+    voxel_size = 0.05
+
+    if points_array.shape[0] == 0:
+        input_tensor = torch.tensor(voxel_grid, dtype=torch.float32)
+        input_tensor = input_tensor.unsqueeze(0)
+        print(f'returned_zeroed_array {input_tensor.shape}')
+        return input_tensor
 
     # scale coordinate value
     points_array = scale_min_max(points_array)
-
-    # Create an empty voxel grid
-    voxel_grid = np.zeros((grid_size, grid_size, grid_size))
+    
 
     # Map points to the voxel grid
     grid_indices = np.floor(points_array / voxel_size).astype(int)
     grid_indices = np.clip(grid_indices, 0, grid_size - 1)
-    voxel_grid[grid_indices[:, 0], grid_indices[:, 1], grid_indices[:, 2]] = 1
+
+    unique_indices, counts = np.unique(grid_indices, return_counts=True, axis=0)
+
+    voxel_grid[unique_indices[:, 0], unique_indices[:, 1], unique_indices[:, 2]] = counts
 
     # Convert the voxel grid to a PyTorch tensor
     input_tensor = torch.tensor(voxel_grid, dtype=torch.float32)
