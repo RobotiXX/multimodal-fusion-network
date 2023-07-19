@@ -29,7 +29,7 @@ def get_voxelized_points(points_array):
     if points_array.shape[0] == 0:
         input_tensor = torch.tensor(voxel_grid, dtype=torch.float32)
         input_tensor = input_tensor.unsqueeze(0)
-        print(f'returned_zeroed_array {input_tensor.shape}')
+        # print(f'returned_zeroed_array {input_tensor.shape}')
         return input_tensor
 
     # scale coordinate value
