@@ -17,22 +17,20 @@ class PclMLP(nn.Module):
         self.backbone_pcl = PclBackbone().float()
 
         self.common = nn.Sequential(
-            nn.Linear(63888+128, 256),
+            nn.Linear(16000+128, 32),
             nn.LeakyReLU(),
-            nn.Linear(256,128),
-            nn.LeakyReLU(),
-            nn.Linear(128,64),
+            nn.Linear(32,16),
             nn.LeakyReLU()            
         )
 
         self.goal_encoder = make_mlp( [4, 64, 128], 'relu', False, False, 0.0)
         
-        self.linear_vel = nn.Linear(64,1)
+        self.linear_vel = nn.Linear(16,1)
 
         self.angular_vel =  nn.Sequential(
-         nn.Linear(64,32),
+         nn.Linear(16,8),
          nn.LeakyReLU(),
-         nn.Linear(32,1))
+         nn.Linear(8,1))
 
     def forward(self, input, goal):
         

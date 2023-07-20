@@ -13,12 +13,12 @@ import matplotlib.pyplot as plt
 import coloredlogs, logging
 from model_builder.pcl.pcl_head import PclMLP
 
-from torch.optim.lr_scheduler import MultiStepLR
+from torch.optim.lr_scheduler import MultiStepLR, CosineAnnealingWarmRestarts
 
 # Create an experiment with your api key
 experiment = Experiment(
     api_key="Ly3Tc8W7kfxPmAxsArJjX9cgo",
-    # project_name= "multimodal-net-with-rnn",
+    # project_name= "test",
     project_name="kkk",
     workspace="bhabaranjan",
 )
@@ -94,7 +94,7 @@ def run_validation(val_files, model, batch_size, epoch, optim):
                 
                 # error_fusion = get_loss(loss, fsn_lin, fsn_anglr, gt_x, gt_y,'fusion')
                 # error_img = get_loss(loss, img_lin, img_anglr, gt_x, gt_y, 'img')
-                error_pcl = get_loss(loss, pcl_lin, pcl_anglr, gt_x, gt_y, 'pcl')
+                error_pcl = get_loss(loss, pcl_lin, pcl_anglr/15, gt_x, gt_y/15, 'pcl')
                 
                 # error_total = error_fusion + ( 0.2 * error_img) + error_pcl
 
@@ -126,15 +126,16 @@ def run_validation(val_files, model, batch_size, epoch, optim):
 def run_training(train_files, val_dirs, batch_size, num_epochs):
     loss = torch.nn.MSELoss()
     model = PclMLP()
-    optim = torch.optim.Adam(model.parameters(), lr = 0.0000004) 
+    optim = torch.optim.Adam(model.parameters(), lr = 0.00001) 
+    scheduler = CosineAnnealingWarmRestarts(optim, T_0=10, T_mult=2, eta_min=0.0000001)
 
     model.to(device)
 
     data_dict = {}
     for epoch in range(num_epochs):
         num_files = 0
-        # lr = scheduler.get_last_lr()        
-        # experiment.log_metric( name = "Learning Rate Decay", value = lr, epoch= epoch+1)
+        lr = scheduler.get_last_lr()        
+        experiment.log_metric( name = "Learning Rate Decay", value = lr, epoch= epoch+1)
         running_loss = []
         # shuffle(train_files)        
         model.train()
@@ -202,8 +203,9 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
             # experiment.log_metric(name = str(train_file.split('/')[-1]+" mod:" +'fusion'), value=np.average(per_file_loss_fusion), epoch= epoch+1)
             running_loss.append(np.average(per_file_loss_pcl))   
             
-               
+        scheduler.step()      
         print(f'================== epoch is: {epoch} and error is: {np.average(running_loss)}==================\n')
+
         if epoch % 2 == 0:
             val_error = run_validation(val_dirs, model, batch_size, epoch, optim)
             experiment.log_metric( name = "Avg Validation loss", value = np.average(val_error), epoch= epoch+1)
@@ -217,7 +219,7 @@ def main():
     # train_path = "../recorded-data/sandbox"
     train_dirs = [ os.path.join(train_path, dir) for dir in os.listdir(train_path)]
     val_dirs = [ os.path.join('../recorded-data/val', dir) for dir in os.listdir('../recorded-data/val')]
-    batch_size = 26
+    batch_size = 10
     epochs = 250
     run_training(train_dirs, val_dirs, batch_size, epochs)
 
