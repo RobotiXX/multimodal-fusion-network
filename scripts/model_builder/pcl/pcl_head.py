@@ -17,9 +17,9 @@ class PclMLP(nn.Module):
         self.backbone_pcl = PclBackbone().float()
 
         self.common = nn.Sequential(
-            nn.Linear(63888+128, 256),
+            nn.Linear(63888+128, 512),
             nn.LeakyReLU(),
-            nn.Linear(256,128),
+            nn.Linear(512,128),
             nn.LeakyReLU(),
             nn.Linear(128,64),
             nn.LeakyReLU()            
