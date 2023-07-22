@@ -6,6 +6,7 @@ import coloredlogs, logging
 import os
 import cv2
 import tf
+import pyquaternion as pq
 
 from torch.utils.data import Dataset
 from scipy.spatial.transform import Rotation as R
@@ -22,14 +23,12 @@ def read_images(path):
     # Will have to do some re-sizing
     return cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-def get_transformation_matrix(position, quaternion):
-    
-    q = tf.transformations.quaternion_from_euler(quaternion[0], quaternion[1], quaternion[2])
-    rotation_matrix = tf.transformations.quaternion_matrix(q)
-    translation = -np.matmul(rotation_matrix, np.array([position[0],position[1],0,1]).reshape(4,1))
-    translation[3,0] = 1
+def get_transformation_matrix(position, quaternion):    
+    quaternion = pq.Quaternion(quaternion[3], quaternion[0], quaternion[1], quaternion[2])
+    # Convert quaternion to rotation matrix
+    rotation_matrix = quaternion.rotation_matrix
+    translation = -np.matmul(rotation_matrix, np.array([position[0],position[1],0]).reshape(3,1))
     transformation_matrix = np.concatenate([rotation_matrix[:,:3], translation], axis=1)
-    
     return transformation_matrix
 
 def cart2polar(xyz):
@@ -81,7 +80,7 @@ class ApplyTransformation(Dataset):
         # print(prev_cmd_vel)
         lin_and_angular = np.concatenate([perv_linear, prev_anglular], axis=1)
         # print(lin_and_angular.shape)
-        gt_cmd_vel = (self.gt_cmd_vel[0], 15 * np.around(self.gt_cmd_vel[2], 3))
+        gt_cmd_vel = (self.gt_cmd_vel[0], 105 * self.gt_cmd_vel[2])
         # gt_cmd_vel = (self.gt_cmd_vel[0], np.around(self.gt_cmd_vel[2], 2))
         local_goal = torch.tensor(local_goal, dtype=torch.float32).ravel()
 

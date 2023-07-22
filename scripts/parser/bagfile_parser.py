@@ -13,9 +13,10 @@ import pickle
 from sensor_msgs.msg import PointCloud2, CompressedImage, Joy
 from nav_msgs.msg import Odometry
 from pathlib import Path
+from collections import OrderedDict
 
 counter = {'index': 0, 'sub-sampler': 1}
-previous_rbt_location = []
+previous_rbt_location = OrderedDict()
 local_goal = {}
 previous_velocities = []
 play_back_snapshot = {}
@@ -34,22 +35,23 @@ def getJoystickValue(x, scale, kDeadZone=0.02):
 
 def odom_callback(odom):
     position = odom.pose.pose.position
-    cmd_vel = odom.twist.twist
-    # print(cmd_vel)
-    # store 20 latest liner and angular velocities
     
-
-    for idx, robot_pos in enumerate(previous_rbt_location):
+    keys = list(previous_rbt_location.keys())
+    for key in keys:
         # if the current odom position is with in 10 meter radius of a previous position
         # then use current point as a local goal of the previous position(robot's prev location)
         # TODO: should be done as a perpendicular intersection instead of delta approximation of 2
 
-        if ((robot_pos[0] - position.x) ** 2 + (robot_pos[1] - position.y) ** 2 ) >= 8.9:
-            play_back_snapshot[robot_pos[2]]["local_goal"] = (position.x, position.y)
-            # print("local goal foudn for index", robot_pos[2])
-            del previous_rbt_location[idx]
+        if ((previous_rbt_location[key][0] - position.x) ** 2 + (previous_rbt_location[key][1] - position.y) ** 2 ) >= 0.236:
+            if  len(play_back_snapshot[key]["local_goal"]) < 6:
+                play_back_snapshot[key]["local_goal"].append((position.x, position.y))
+                previous_rbt_location[key][0] = position.x
+                previous_rbt_location[key][1] = position.y
+                # break
+            else:    # print("local goal foudn for index", robot_pos[2])                
+                previous_rbt_location.pop(key)
+        else:
             break
-
 
 def get_lidar_points(lidar):
     point_cloud = []
@@ -89,7 +91,7 @@ def aprrox_sync_callback(lidar, rgb, odom, joy):
     # This function is called at 10Hz
     # Subsampling at each 5th second approx
     # print(f'counter: {counter["sub-sampler"]}')
-    if counter['sub-sampler'] % 6 == 0:
+    if counter['sub-sampler'] % 2 == 0:
         # TODO: these 4 values will be pickled at index counter['index'] except image
         store_image(rgb, counter['index'])
         point_cloud = get_lidar_points(lidar)
@@ -105,17 +107,18 @@ def aprrox_sync_callback(lidar, rgb, odom, joy):
             getJoystickValue(joy_axes[0], -np.deg2rad(90.0), kDeadZone=0.0),
         )
         # print(f'ground truth velocity: {gt_cmd_vel}\n\n')
-        # print(prev_cmd_vel)
+        # print("here")
         play_back_snapshot[counter['index']] = {
             "point_cloud": point_cloud,
-            "prev_cmd_vel": prev_cmd_vel,
+            # "prev_cmd_vel": prev_cmd_vel,
             "robot_position": robot_pos,
-            "gt_cmd_vel": gt_cmd_vel
+            "gt_cmd_vel": gt_cmd_vel,
+            "local_goal": []
         }
-        previous_rbt_location.append((pos.x, pos.y, counter['index']))
+        previous_rbt_location[counter['index']] =[pos.x, pos.y]
 
         counter['index'] += 1
-        counter['sub-sampler'] = 1
+        counter['sub-sampler'] = 0
 
     counter['sub-sampler'] += 1    
 
