@@ -37,18 +37,14 @@ def get_data_loader(input_file_path, read_type, batch_size):
     logging.info(f'Reading {read_type} file from path {input_file_path}')
     indexer = IndexDataset(input_file_path)
     transformer = ApplyTransformation(indexer)
-    data_loader = DataLoader(transformer, batch_size = batch_size, drop_last=False, shuffle=True, prefetch_factor=5,num_workers=10)
+    data_loader = DataLoader(transformer, batch_size = batch_size, drop_last=False, shuffle=True, prefetch_factor=2,num_workers=2)
     return data_loader
 
-def get_loss(loss_fn, lin_vel, angular_vel, gt_lin, gt_angular, data_src):
+def get_loss_prev(loss_fn, lin_vel, angular_vel, gt_lin, gt_angular, data_src):
     lin_error =  loss_fn(lin_vel, gt_lin) 
     anglr_error = loss_fn(angular_vel, gt_angular)
-    error = None
-    
-    if data_src == 'train_pcl':
-        error = torch.log(lin_error) + torch.log(anglr_error)
-    else:
-        error = lin_error + anglr_error
+
+    error = lin_error + anglr_error
 
     lin_err_val = lin_error.item()
     anglr_error_val = anglr_error.item()
@@ -59,6 +55,11 @@ def get_loss(loss_fn, lin_vel, angular_vel, gt_lin, gt_angular, data_src):
 
     return error
 
+def get_loss(loss_fn, pts, gt_pts, data_src):
+    error =  loss_fn(pts, gt_pts)     
+    experiment.log_metric(name = str('lerror_'+data_src), value=error.item())    
+    return error
+
 
 def run_validation(val_files, model, batch_size, epoch, optim):
        print("Running Validation..\n")
@@ -66,30 +67,26 @@ def run_validation(val_files, model, batch_size, epoch, optim):
        loss = torch.nn.MSELoss()
        model.eval()
        with torch.no_grad():
-        for val_file in val_files:        
-            val_loader = None
-            if val_file not in val_dict:
-                val_loader = get_data_loader( val_file, 'validation', batch_size = batch_size )
-                val_dict[val_file] = val_loader
-            else:
-                val_loader = val_dict[val_file]
+        for val_file in val_files:
+            val_loader = get_data_loader( val_file, 'validation', batch_size = batch_size )
+
 
             per_file_loss_fusion  = []
             per_file_loss_ǐmage = []
             per_file_loss_pcl = []
             per_file_total_loss = []
-            for index, (stacked_images, pcl ,local_goal, prev_cmd_vel, gt_cmd_vel) in tqdm(enumerate(val_loader)):
+            for index, (stacked_images, pcl ,local_goal, gt_pts) in tqdm(enumerate(val_loader)):
                 stacked_images = stacked_images.to(device)
                 pcl = pcl.to(device)
                 local_goal= local_goal.to(device)
-                prev_cmd_vel= prev_cmd_vel.to(device)
-                gt_cmd_vel= gt_cmd_vel.to(device)
                 
-                pcl_lin, pcl_anglr = model(pcl, local_goal)
+                gt_pts= gt_pts.to(device)
+                
+                pts = model(pcl, local_goal)
                 
 
-                gt_x = torch.unsqueeze(gt_cmd_vel[:,0],1)
-                gt_y = torch.unsqueeze(gt_cmd_vel[:,1],1)
+                # gt_x = torch.unsqueeze(gt_cmd_vel[:,0],1)
+                # gt_y = torch.unsqueeze(gt_cmd_vel[:,1],1)
 
                 # print('\nstart----')
                 # print(pcl_lin)
@@ -101,7 +98,7 @@ def run_validation(val_files, model, batch_size, epoch, optim):
                 
                 # error_fusion = get_loss(loss, fsn_lin, fsn_anglr, gt_x, gt_y,'fusion')
                 # error_img = get_loss(loss, img_lin, img_anglr, gt_x, gt_y, 'img')
-                error_pcl = get_loss(loss, pcl_lin, pcl_anglr/105, gt_x, gt_y/105, 'pcl')
+                error_pcl = get_loss(loss, pts/100, gt_pts/100, 'validation')
                 
                 # error_total = error_fusion + ( 0.2 * error_img) + error_pcl
 
@@ -123,7 +120,7 @@ def run_validation(val_files, model, batch_size, epoch, optim):
             torch.save({
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optim.state_dict(),
-            }, f'latest_model_at_{epoch+1}.pth')
+            }, f'way_latest_model_at_{epoch+1}_{avg_loss_on_validation}.pth')
 
         print(f'=========================> Average Validation error is:   {avg_loss_on_validation} \n')
         return avg_loss_on_validation
@@ -134,8 +131,8 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
     loss = torch.nn.MSELoss()
     model = PclMLP()
     model.to(device)
-    optim = torch.optim.Adagrad(model.parameters(), lr=0.00001, weight_decay=0.001)     
-    
+    optim = torch.optim.Adam(model.parameters(), lr=0.0001)     
+    # run_validation(val_dirs, model, batch_size, 0, optim)
     # run_validation(val_dirs, model, batch_size, 2, optim)
     
     # ckpt = torch.load('/home/ranjan/Workspace/my_works/fusion-network/scripts/model_at_60.pth')
@@ -169,23 +166,20 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
             per_file_loss_ǐmage = [] 
             per_file_loss_pcl = [] 
             per_file_total_loss = []
-            for index, (stacked_images, pcl ,local_goal, prev_cmd_vel, gt_cmd_vel) in enumerate(train_loader):
+            for index, (stacked_images, pcl ,local_goal, gt_cmd_vel) in enumerate(train_loader):
 
                 # print(f'gt_cmd: {gt_cmd_vel}')
                 # print(f'prev_cmd_vel:{prev_cmd_vel}')
                 
                 stacked_images = stacked_images.to(device)
                 pcl = pcl.to(device)
-                local_goal= local_goal.to(device)
-                prev_cmd_vel= prev_cmd_vel.to(device)
-                gt_cmd_vel= gt_cmd_vel.to(device)
+                local_goal= local_goal.to(device)                
+                gt_pts= gt_cmd_vel.to(device)
                 # print(f"{pcl.shape = }")
                 optim.zero_grad()
                 
-                pcl_lin, pcl_anglr = model(pcl, local_goal)
+                pts = model(pcl, local_goal)
                 
-                gt_x = torch.unsqueeze(gt_cmd_vel[:,0],1)
-                gt_y = torch.unsqueeze(gt_cmd_vel[:,1],1)
 
                 # print(fsn_lin)
                 # print(fsn_anglr)
@@ -195,7 +189,7 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
                 
                 # error_fusion = get_loss(loss, fsn_lin, fsn_anglr, gt_x, gt_y,'train_fusion')
                 # error_img = get_loss(loss, img_lin, img_anglr, gt_x, gt_y, 'train_img')
-                error_pcl = get_loss(loss, pcl_lin, pcl_anglr, gt_x, gt_y,'train_pcl')
+                error_pcl = get_loss(loss, pts, gt_pts,'train_pcl')
                 
                 # error_total = error_fusion + error_img + error_pcl
 
@@ -212,7 +206,7 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
                 per_file_loss_pcl.append(error_pcl.item())
                 # per_file_total_loss.append(error_total.item())
 
-                print(f'step is:   {index} and total error is:  pcl: {error_pcl.item()} fusion: {error_pcl.item()}\n')
+                print(f'step is:   {index} and total error is :: {error_pcl.item()}\n')
             
             # experiment.log_metric(name = str(train_file.split('/')[-1]+ " mod:" +'img'), value=np.average(per_file_loss_ǐmage), epoch= epoch+1)
             experiment.log_metric(name = str(train_file.split('/')[-1]+" mod:" +'pcl'), value=np.average(per_file_loss_pcl), epoch= epoch+1)
