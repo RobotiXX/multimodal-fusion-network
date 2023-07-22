@@ -37,7 +37,7 @@ def get_data_loader(input_file_path, read_type, batch_size):
     logging.info(f'Reading {read_type} file from path {input_file_path}')
     indexer = IndexDataset(input_file_path)
     transformer = ApplyTransformation(indexer)
-    data_loader = DataLoader(transformer, batch_size = batch_size, drop_last=False, shuffle=True, prefetch_factor=2,num_workers=2)
+    data_loader = DataLoader(transformer, batch_size = batch_size, drop_last=False, shuffle=True, prefetch_factor=2,num_workers=3)
     return data_loader
 
 def get_loss_prev(loss_fn, lin_vel, angular_vel, gt_lin, gt_angular, data_src):
@@ -120,7 +120,7 @@ def run_validation(val_files, model, batch_size, epoch, optim):
             torch.save({
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optim.state_dict(),
-            }, f'way_latest_model_at_{epoch+1}_{avg_loss_on_validation}.pth')
+            }, f'/scratch/bpanigr/fusion-network/way_pts2_model_at_{epoch+1}_{avg_loss_on_validation}.pth')
 
         print(f'=========================> Average Validation error is:   {avg_loss_on_validation} \n')
         return avg_loss_on_validation
@@ -131,24 +131,24 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
     loss = torch.nn.MSELoss()
     model = PclMLP()
     model.to(device)
-    optim = torch.optim.Adam(model.parameters(), lr=0.0001)     
+    optim = torch.optim.Adam(model.parameters(), lr=0.00004)     
     # run_validation(val_dirs, model, batch_size, 0, optim)
     # run_validation(val_dirs, model, batch_size, 2, optim)
     
-    # ckpt = torch.load('/home/ranjan/Workspace/my_works/fusion-network/scripts/model_at_60.pth')
-    # model.load_state_dict(ckpt['model_state_dict'])
+    ckpt = torch.load('/scratch/bpanigr/fusion-network/way_latest_model_at_40_2.343480117061302.pth')
+    model.load_state_dict(ckpt['model_state_dict'])
     # run_validation(val_dirs, model, batch_size, 0, optim)
     # return
 
     
-    # scheduler = MultiStepLR(optim, milestones= [25,85,145], gamma=2)
+    scheduler = MultiStepLR(optim, milestones= [25,70], gamma=.6)
 
 
     data_dict = {}
     for epoch in range(num_epochs):
         num_files = 0
-        # lr = scheduler.get_last_lr()        
-        # experiment.log_metric( name = "Learning Rate Decay", value = lr, epoch= epoch+1)
+        lr = scheduler.get_last_lr()        
+        experiment.log_metric( name = "Learning Rate Decay", value = lr, epoch= epoch+1)
         running_loss = []
         shuffle(train_files)        
         model.train()
@@ -213,7 +213,7 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
             # experiment.log_metric(name = str(train_file.split('/')[-1]+" mod:" +'fusion'), value=np.average(per_file_loss_fusion), epoch= epoch+1)
             running_loss.append(np.average(per_file_loss_pcl))   
             
-        # scheduler.step()      
+        scheduler.step()      
         print(f'================== epoch is: {epoch} and error is: {np.average(running_loss)}==================\n')
 
         if (epoch+1) % 2 == 0:
@@ -225,13 +225,11 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
 
 
 def main():
-    train_path = "../recorded-data/train"
-    # train_path = "../recorded-data/sandbox"
+    train_path = "/scratch/bpanigr/fusion-network/recorded-data/train"
     train_dirs = [ os.path.join(train_path, dir) for dir in os.listdir(train_path)]
-    # validation_path = '/home/ranjan/Workspace/my_works/fusion-network/recorded-data/train_temp'
-    validation_path = '../recorded-data/val'
+    validation_path = '/scratch/bpanigr/fusion-network/recorded-data/val'
     val_dirs = [ os.path.join(validation_path, dir) for dir in os.listdir(validation_path)]
-    batch_size = 26
+    batch_size = 40
     epochs = 250
     run_training(train_dirs, val_dirs, batch_size, epochs)
 
