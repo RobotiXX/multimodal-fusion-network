@@ -11,19 +11,15 @@ from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 import matplotlib.pyplot as plt
 import coloredlogs, logging
-from model_builder.pcl.pcl_head import PclMLP
+from model_builder.image.image_head import ImageHeadMLP
 
-<<<<<<< Updated upstream
 from torch.optim.lr_scheduler import MultiStepLR, CosineAnnealingWarmRestarts, CyclicLR
-=======
-from torch.optim.lr_scheduler import MultiStepLR,CosineAnnealingWarmRestarts
->>>>>>> Stashed changes
 
 # Create an experiment with your api key
 experiment = Experiment(
     api_key="Ly3Tc8W7kfxPmAxsArJjX9cgo",
     # project_name= "test",
-    project_name="kkk",
+    project_name="image_only",
     workspace="bhabaranjan",
 )
 
@@ -41,7 +37,7 @@ def get_data_loader(input_file_path, read_type, batch_size):
     logging.info(f'Reading {read_type} file from path {input_file_path}')
     indexer = IndexDataset(input_file_path)
     transformer = ApplyTransformation(indexer)
-    data_loader = DataLoader(transformer, batch_size = batch_size, drop_last=False, shuffle=True, prefetch_factor=20,num_workers=10)
+    data_loader = DataLoader(transformer, batch_size = batch_size, drop_last=False, shuffle=True, prefetch_factor=2,num_workers=2)
     return data_loader
 
 def get_loss(loss_fn, lin_vel, angular_vel, gt_lin, gt_angular, data_src):
@@ -84,7 +80,7 @@ def run_validation(val_files, model, batch_size, epoch, optim):
                 prev_cmd_vel= prev_cmd_vel.to(device)
                 gt_cmd_vel= gt_cmd_vel.to(device)
                 
-                pcl_lin, pcl_anglr = model(pcl, local_goal)
+                pcl_lin, pcl_anglr = model(stacked_images, local_goal)
                 
 
                 gt_x = torch.unsqueeze(gt_cmd_vel[:,0],1)
@@ -92,15 +88,15 @@ def run_validation(val_files, model, batch_size, epoch, optim):
 
                 # print('\nstart----')
                 # print(pcl_lin)
-                # print(pcl_anglr/15)
+                # print(pcl_anglr)
  
                 # print(gt_x)
-                # print(gt_y/15)
+                # print(gt_y)
                 # print('end\n')
                 
                 # error_fusion = get_loss(loss, fsn_lin, fsn_anglr, gt_x, gt_y,'fusion')
                 # error_img = get_loss(loss, img_lin, img_anglr, gt_x, gt_y, 'img')
-                error_pcl = get_loss(loss, pcl_lin, pcl_anglr/15, gt_x, gt_y/15, 'pcl')
+                error_pcl = get_loss(loss, pcl_lin/10, pcl_anglr/150, gt_x/10, gt_y/150, 'pcl')
                 
                 # error_total = error_fusion + ( 0.2 * error_img) + error_pcl
 
@@ -122,11 +118,7 @@ def run_validation(val_files, model, batch_size, epoch, optim):
             torch.save({
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optim.state_dict(),
-<<<<<<< Updated upstream
-            }, f'/home/bpanigr/Workspace/fusion-network/fusion-network/last_model_at_{epoch+1}.pth')
-=======
-            }, f'/home/bpanigr/Workspace/fusion-network/fusion-network/scripts/model_at_cosine_{epoch+1}.pth')
->>>>>>> Stashed changes
+            }, f'/home/bpanigr/Workspace/fusion-network/fusion-network/recorded-data/latest_model_at_{epoch+1}.pth')
 
         print(f'=========================> Average Validation error is:   {avg_loss_on_validation} \n')
         return avg_loss_on_validation
@@ -135,30 +127,26 @@ def run_validation(val_files, model, batch_size, epoch, optim):
 
 def run_training(train_files, val_dirs, batch_size, num_epochs):
     loss = torch.nn.MSELoss()
-    model = PclMLP()
-    optim = torch.optim.Adam(model.parameters(), lr = 0.0000004)     
+    model = ImageHeadMLP()
     model.to(device)
-
-<<<<<<< Updated upstream
-    # ckpt = torch.load('/home/ranjan/Workspace/my_works/fusion-network/model_ckpt/model_at_31.pth')
+    optim = torch.optim.Adagrad(model.parameters(), lr = 0.0001, weight_decay=0.0001)     
+    
+    # run_validation(val_dirs, model, batch_size, 2, optim)
+    
+    # ckpt = torch.load('/home/ranjan/Workspace/my_works/fusion-network/scripts/model_at_60.pth')
     # model.load_state_dict(ckpt['model_state_dict'])
-    # run_validation(val_dirs, model, batch_size, 1, optim)
+    # run_validation(val_dirs, model, batch_size, 0, optim)
     # return
-=======
-    scheduler = CosineAnnealingWarmRestarts(optim, T_0=20, T_mult=2, eta_min=0.0000001)
-
->>>>>>> Stashed changes
-
+    run_validation(val_dirs, model, batch_size, 0, optim)
     
-    scheduler = MultiStepLR(optim, milestones= [35,80,120,150,180,210], gamma=2)
+    # scheduler = MultiStepLR(optim, milestones= [25,85,145], gamma=2)
 
-    
 
     data_dict = {}
     for epoch in range(num_epochs):
         num_files = 0
-        lr = scheduler.get_last_lr()        
-        experiment.log_metric( name = "Learning Rate Decay", value = lr, epoch= epoch+1)
+        # lr = scheduler.get_last_lr()        
+        # experiment.log_metric( name = "Learning Rate Decay", value = lr, epoch= epoch+1)
         running_loss = []
         shuffle(train_files)        
         model.train()
@@ -189,7 +177,7 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
                 # print(f"{pcl.shape = }")
                 optim.zero_grad()
                 
-                pcl_lin, pcl_anglr = model(pcl, local_goal)
+                pcl_lin, pcl_anglr = model(stacked_images, local_goal)
                 
                 gt_x = torch.unsqueeze(gt_cmd_vel[:,0],1)
                 gt_y = torch.unsqueeze(gt_cmd_vel[:,1],1)
@@ -226,7 +214,7 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
             # experiment.log_metric(name = str(train_file.split('/')[-1]+" mod:" +'fusion'), value=np.average(per_file_loss_fusion), epoch= epoch+1)
             running_loss.append(np.average(per_file_loss_pcl))   
             
-        scheduler.step()      
+        # scheduler.step()      
         print(f'================== epoch is: {epoch} and error is: {np.average(running_loss)}==================\n')
 
         if (epoch+1) % 2 == 0:
@@ -241,12 +229,10 @@ def main():
     train_path = "/home/bpanigr/Workspace/fusion-network/fusion-network/recorded-data/train"
     # train_path = "../recorded-data/sandbox"
     train_dirs = [ os.path.join(train_path, dir) for dir in os.listdir(train_path)]
-    val_dirs = [ os.path.join('/home/bpanigr/Workspace/fusion-network/fusion-network/recorded-data/val', dir) for dir in os.listdir('/home/bpanigr/Workspace/fusion-network/fusion-network/recorded-data/val')]
-<<<<<<< Updated upstream
+    # validation_path = '/home/ranjan/Workspace/my_works/fusion-network/recorded-data/train_temp'
+    validation_path = '/home/bpanigr/Workspace/fusion-network/fusion-network/recorded-data/val'
+    val_dirs = [ os.path.join(validation_path, dir) for dir in os.listdir(validation_path)]
     batch_size = 26
-=======
-    batch_size = 10
->>>>>>> Stashed changes
     epochs = 250
     run_training(train_dirs, val_dirs, batch_size, epochs)
 

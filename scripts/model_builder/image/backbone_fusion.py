@@ -13,7 +13,7 @@ class ImageFusionModel(nn.Module):
         self,
         output_layers = [5,6,7],
         backbone: str = "resnet18",
-        n_frames: int = 4,
+        n_frames: int = 1,
         n_channels: int = 3,
         act: str = 'relu',
         l_act: bool = False, bn: bool = False, dropout: float = 0.0,
@@ -38,10 +38,11 @@ class ImageFusionModel(nn.Module):
         return hook
     
     def forward(self, stacked_images):
-        # print(f"{img.stacked_images = }")
+        # print(f"{stacked_images.shape}")
         # image features in shape (B, 512)
         imgs = self.backbone(stacked_images)
 
         features = torch.cat([imgs], dim=-1)
         # return the action in shape (B, 2)
+        # print(f'{features.shape}')
         return features, self.selected_out
