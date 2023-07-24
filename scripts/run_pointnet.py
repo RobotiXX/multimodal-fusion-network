@@ -118,7 +118,7 @@ def run_validation(val_files, model, batch_size, epoch, optim):
             torch.save({
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optim.state_dict(),
-            }, f'model_at_{epoch+1}.pth')
+            }, f'/scratch/bpanigr/fusion-network/way_pts2_model_at_{epoch+1}_{avg_loss_on_validation}.pth')
 
         print(f'=========================> Average Validation error is:   {avg_loss_on_validation} \n')
         return avg_loss_on_validation
@@ -131,29 +131,19 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
     optim = torch.optim.Adam(model.parameters(), lr = 0.0000004) 
 
     model.to(device)
-    optim = torch.optim.Adam(model.parameters(), lr=0.0001)     
+    optim = torch.optim.Adam(model.parameters(), lr=0.000004)     
     # run_validation(val_dirs, model, batch_size, 0, optim)
     # run_validation(val_dirs, model, batch_size, 2, optim)
     
-    # ckpt = torch.load('/home/ranjan/Workspace/my_works/fusion-network/scripts/model_at_60.pth')
-    # model.load_state_dict(ckpt['model_state_dict'])
+    ckpt = torch.load('/scratch/bpanigr/fusion-network/way_latest_model_at_40_2.343480117061302.pth')
+    model.load_state_dict(ckpt['model_state_dict'])
     # run_validation(val_dirs, model, batch_size, 0, optim)
     # return
 
-    
-    # scheduler = MultiStepLR(optim, milestones= [25,85,145], gamma=2)
+    optim.param_groups[0]['lr'] = 0.000004
+    scheduler = MultiStepLR(optim, milestones= [25,70], gamma=.6)
 
-
-    # ckpt = torch.load('/home/ranjan/Workspace/my_works/fusion-network/model_ckpt/model_at_31.pth')
-    # model.load_state_dict(ckpt['model_state_dict'])
-    # run_validation(val_dirs, model, batch_size, 1, optim)
-    # return
-
-    
-    scheduler = MultiStepLR(optim, milestones= [35,80,120,150,180,210], gamma=2)
-
-    
-
+    print(scheduler.get_last_lr())
     data_dict = {}
     for epoch in range(num_epochs):
         num_files = 0
@@ -223,7 +213,7 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
             # experiment.log_metric(name = str(train_file.split('/')[-1]+" mod:" +'fusion'), value=np.average(per_file_loss_fusion), epoch= epoch+1)
             running_loss.append(np.average(per_file_loss_pcl))   
             
-               
+        scheduler.step()      
         print(f'================== epoch is: {epoch} and error is: {np.average(running_loss)}==================\n')
 
         if (epoch+1) % 2 == 0:
@@ -235,18 +225,13 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
 
 
 def main():
-    train_path = "/home/bpanigr/Workspace/fusion-network/fusion-network/recorded-data/train"
-    # train_path = "../recorded-data/sandbox"
+    train_path = "/scratch/bpanigr/fusion-network/recorded-data/train"
     train_dirs = [ os.path.join(train_path, dir) for dir in os.listdir(train_path)]
-    val_dirs = [ os.path.join('../recorded-data/val', dir) for dir in os.listdir('../recorded-data/val')]
-    batch_size = 26
-=======
-    batch_size = 10
->>>>>>> Stashed changes
+    validation_path = '/scratch/bpanigr/fusion-network/recorded-data/val'
+    val_dirs = [ os.path.join(validation_path, dir) for dir in os.listdir(validation_path)]
+    batch_size = 40
     epochs = 250
     run_training(train_dirs, val_dirs, batch_size, epochs)
-
-
 
 main()
 
