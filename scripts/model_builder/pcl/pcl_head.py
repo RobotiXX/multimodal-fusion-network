@@ -33,8 +33,7 @@ class PclMLP(nn.Module):
                 
 
     def forward(self, input, goal):
-        
-        
+                    
         point_cloud_feat = self.backbone_pcl(input.float())
         # print(f'point cloud: {point_cloud_feat.shape}')
         goal = self.goal_encoder(goal)        

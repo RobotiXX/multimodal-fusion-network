@@ -53,4 +53,4 @@ class PclBackbone(nn.Module):
         # feat_l2 = feat_l2.contiguous().view(batchsize, -1)
         feat_l3 = feat_l3.contiguous().view(batchsize, -1)        
         
-        return feat_l2
+        return feat_l3

@@ -7,14 +7,14 @@ from ..image.image_head import ImageHeadMLP
 
 def set_trainable_false(model):
     for param in model.parameters():
-    param.requires_grad = False    
+        param.requires_grad = False    
 
 def torch_load_weights(path):
     check_point = torch.load(path)
     model_weights = check_point['model_state_dict']
     return model_weights
 
-class BcFusionModel(nn.Module):
+class MultiModalNet(nn.Module):
     def __init__(self):
 
         super().__init__()
@@ -22,8 +22,8 @@ class BcFusionModel(nn.Module):
         self.image =  ImageHeadMLP()        
         self.pcl =  PclMLP()
 
-        self.image_weights = torch_load_weights()
-        self.pcl_weights = torch_load_weights()
+        self.image_weights = torch_load_weights('/home/ranjan/Workspace/my_works/fusion-network/scripts/pre_img_way_pts_model_at_110.pth')
+        self.pcl_weights = torch_load_weights('/home/ranjan/Workspace/my_works/fusion-network/scripts/way_pts2_model_at_120_0.013270827467591461.pth')
 
         del self.pcl_weights['previous.2.weight']
         del self.pcl_weights['previous.2.bias']
@@ -43,20 +43,20 @@ class BcFusionModel(nn.Module):
         )
 
         self.intermediate_features = nn.Sequential(
-            nn.Linear(256+128+128,256)
+            nn.Linear(256+128+128,256),
             nn.LeakyReLU()
         )
 
         self.goal_encoded_features = nn.Sequential(
-            nn.Linear(256+256+64+128, 512)
-            nn.LeakyReLU()
-            nn.Linear(512, 256)
+            nn.Linear(256+256+64+128, 512),
+            nn.LeakyReLU(),
+            nn.Linear(512, 256),
             nn.LeakyReLU()
         )
 
         self.predict = nn.Linear(256,10)
 
-    def forward(self, stacked_images, pcl, local_goal, prev_cmd_vel):
+    def forward(self, stacked_images, pcl, local_goal):
 
         image_features, image_feat_encoded, image_feat_with_goal = self.image(stacked_images, local_goal)
         pcl_features, pcl_feat_encoded, pcl_feat_with_goal = self.pcl(pcl, local_goal)
@@ -68,7 +68,7 @@ class BcFusionModel(nn.Module):
         second_layer_features = torch.cat([fustion_features,image_feat_encoded, pcl_feat_encoded], dim=-1)
         intermediate_features = self.intermediate_features(second_layer_features)
 
-        third_layer_features = torch.cat([backbone_feats,intermediate_features, image_feat_with_goal,pcl_feat_with_goal], dim=-1)
+        third_layer_features = torch.cat([fustion_features, intermediate_features, image_feat_with_goal,pcl_feat_with_goal], dim=-1)
         goal_encoded_features = self.goal_encoded_features(third_layer_features)
 
         prediction = self.predict(goal_encoded_features)
