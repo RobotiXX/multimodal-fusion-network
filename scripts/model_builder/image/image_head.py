@@ -35,7 +35,7 @@ class ImageHeadMLP(nn.Module):
 
     def forward(self, input, goal):
         
-        image_features, fusion_feat = self.backbone(input)                
+        image_features, _ = self.backbone(input)                
         goal = self.goal_encoder(goal)
 
         feat_shared_common = self.common(image_features)
@@ -44,9 +44,9 @@ class ImageHeadMLP(nn.Module):
 
         img_goal_feat = self.concat_goal(img_feat_with_goal)
 
-        predict = self.way_pts(img_goal_feat)
+        # predict = self.way_pts(img_goal_feat)
           
-        return predict
+        return image_features, feat_shared_common, img_goal_feat
 
 
 
