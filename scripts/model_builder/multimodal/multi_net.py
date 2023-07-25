@@ -22,8 +22,8 @@ class MultiModalNet(nn.Module):
         self.image =  ImageHeadMLP()        
         self.pcl =  PclMLP()
 
-        self.image_weights = torch_load_weights('/home/ranjan/Workspace/my_works/fusion-network/scripts/pre_img_way_pts_model_at_110.pth')
-        self.pcl_weights = torch_load_weights('/home/ranjan/Workspace/my_works/fusion-network/scripts/way_pts2_model_at_120_0.013270827467591461.pth')
+        self.image_weights = torch_load_weights('/home/bpanigr/Workspace/pre_img_way_pts_model_at_110.pth')
+        self.pcl_weights = torch_load_weights('/scratch/bpanigr/fusion-network/way_pts2_model_at_120_0.013270827467591461.pth')
 
         del self.pcl_weights['previous.2.weight']
         del self.pcl_weights['previous.2.bias']
