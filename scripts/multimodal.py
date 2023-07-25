@@ -38,7 +38,7 @@ val_dict = {}
 # model_storage_path = '/home/ranjan/Workspace/my_works/fusion-network/scripts'
 
 root_path = '/scratch/bpanigr/fusion-network/recorded-data/'
-model_storage_path = '/home/bpanigr'
+model_storage_path = '/home/bpanigr/Workspace/lin_angler_model'
 
 
 def clear_dict(dict, epoch):
@@ -96,14 +96,14 @@ def run_validation(val_files, model, batch_size, epoch, optim):
             per_file_loss_ǐmage = []
             per_file_loss_pcl = []
             per_file_total_loss = []
-            for index, (stacked_images, pcl ,local_goal, gt_pts) in tqdm(enumerate(val_loader)):
+            for index, (stacked_images, pcl ,local_goal, _, gt_cmd_vel) in tqdm(enumerate(val_loader)):
                 stacked_images = stacked_images.to(device)
                 pcl = pcl.to(device)
                 local_goal= local_goal.to(device)
                 
-                gt_pts= gt_pts.to(device)
+                gt_cmd_vel= gt_cmd_vel.to(device)
                 
-                pts = model(stacked_images, pcl, local_goal)
+                pred_cmd = model(stacked_images, pcl, local_goal)
                 
 
                 # gt_x = torch.unsqueeze(gt_cmd_vel[:,0],1)
@@ -117,7 +117,7 @@ def run_validation(val_files, model, batch_size, epoch, optim):
                 
                 # error_fusion = get_loss(loss, fsn_lin, fsn_anglr, gt_x, gt_y,'fusion')
                 # error_img = get_loss(loss, img_lin, img_anglr, gt_x, gt_y, 'img')
-                error_pcl = get_loss(loss, pts/100, gt_pts/100, 'validation')
+                error_pcl = get_loss(loss, pred_cmd, gt_cmd_vel, 'validation')
                 
                 # error_total = error_fusion + ( 0.2 * error_img) + error_pcl
 
@@ -139,7 +139,7 @@ def run_validation(val_files, model, batch_size, epoch, optim):
             torch.save({
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optim.state_dict(),
-            }, f'{model_storage_path}/multi_modal{epoch+1}_{avg_loss_on_validation}.pth')
+            }, f'{model_storage_path}/multi_modal_velocities_{epoch+1}.pth')
 
         print(f'=========================> Average Validation error is:   {avg_loss_on_validation} \n')
         return avg_loss_on_validation
@@ -151,7 +151,7 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
     model = MultiModalNet()    
 
     model.to(device)
-    optim = torch.optim.Adam(model.parameters(), lr=0.00001)     
+    optim = torch.optim.Adam(model.parameters(), lr=0.000004)     
     # run_validation(val_dirs, model, batch_size, 0, optim)
     # run_validation(val_dirs, model, batch_size, 2, optim)
     
@@ -159,7 +159,7 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
     # model.load_state_dict(ckpt['model_state_dict'])
     # run_validation(val_dirs, model, batch_size, 0, optim)
     # return
-    scheduler = MultiStepLR(optim, milestones= [15,50,100], gamma=.6)
+    scheduler = MultiStepLR(optim, milestones= [50,100], gamma=.6)
 
     data_dict = {}
     for epoch in range(num_epochs):
@@ -184,7 +184,7 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
             per_file_loss_ǐmage = [] 
             per_file_loss_pcl = [] 
             per_file_total_loss = []
-            for index, (stacked_images, pcl ,local_goal, gt_cmd_vel) in enumerate(train_loader):
+            for index, (stacked_images, pcl ,local_goal, _, gt_cmd_vel) in enumerate(train_loader):
 
                 # print(f'gt_cmd: {gt_cmd_vel}')
                 # print(f'prev_cmd_vel:{prev_cmd_vel}')
@@ -192,11 +192,11 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
                 stacked_images = stacked_images.to(device)
                 pcl = pcl.to(device)
                 local_goal= local_goal.to(device)                
-                gt_pts= gt_cmd_vel.to(device)
+                gt_cmd_vel= gt_cmd_vel.to(device)
                 # print(f"{pcl.shape = }")
                 optim.zero_grad()
                 
-                pts = model(stacked_images, pcl, local_goal)
+                pred_cmd = model(stacked_images, pcl, local_goal)
                 
 
                 # print(fsn_lin)
@@ -207,7 +207,7 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
                 
                 # error_fusion = get_loss(loss, fsn_lin, fsn_anglr, gt_x, gt_y,'train_fusion')
                 # error_img = get_loss(loss, img_lin, img_anglr, gt_x, gt_y, 'train_img')
-                error_pcl = get_loss(loss, pts, gt_pts,'train_pcl')
+                error_pcl = get_loss(loss, pred_cmd, gt_cmd_vel,'train_pcl')
                 
                 # error_total = error_fusion + error_img + error_pcl
 

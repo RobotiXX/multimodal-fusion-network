@@ -54,7 +54,7 @@ class MultiModalNet(nn.Module):
             nn.LeakyReLU()
         )
 
-        self.predict = nn.Linear(256,10)
+        self.predict = nn.Linear(256,2)
 
     def forward(self, stacked_images, pcl, local_goal):
 

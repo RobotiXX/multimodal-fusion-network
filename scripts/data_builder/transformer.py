@@ -56,7 +56,7 @@ class ApplyTransformation(Dataset):
         self.point_clouds = data[1]
         self.way_pts = data[2]        
         self.robot_position  = data[3]
-        
+        self.gt_cmd_vel = data[4]
 
         images = [ self.image_transforms(read_images(path)) for path in self.image_paths]
         stacked_images = torch.cat(images, dim=0)
@@ -77,13 +77,16 @@ class ApplyTransformation(Dataset):
         point_clouds = np.array(self.point_clouds[0])   
         point_clouds = get_voxelized_points(point_clouds)
 
+        gt_cmd_vel = (100 * self.gt_cmd_vel[0], 1050 * np.around(self.gt_cmd_vel[2], 3))
 
         
         gt_pts = torch.tensor(way_pts, dtype=torch.float32).ravel()
 
         local_goal = torch.tensor(local_goal, dtype=torch.float32).ravel()        
 
-        return (stacked_images, point_clouds, local_goal, gt_pts)
+        gt_cmd_vel = torch.tensor(gt_cmd_vel, dtype=torch.float32).ravel()        
+
+        return (stacked_images, point_clouds, local_goal, gt_pts, gt_cmd_vel)
 
 
 
