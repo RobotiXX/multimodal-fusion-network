@@ -20,7 +20,7 @@ from torch.optim.lr_scheduler import MultiStepLR,CosineAnnealingWarmRestarts
 experiment = Experiment(
     api_key="Ly3Tc8W7kfxPmAxsArJjX9cgo",
     # project_name= "test",
-    project_name="image-only",
+    # project_name="image-only",
     workspace="bhabaranjan",
 )
 
@@ -34,11 +34,11 @@ min_val_error = 100000
 
 val_dict = {}
 
-# root_path = '/home/ranjan/Workspace/my_works/fusion-network/recorded-data'
-# model_storage_path = '/home/ranjan/Workspace/my_works/fusion-network/scripts'
+root_path = '/home/ranjan/Workspace/my_works/fusion-network/recorded-data'
+model_storage_path = '/home/ranjan/Workspace/my_works/fusion-network/scripts'
 
-root_path = '/scratch/bpanigr/fusion-network/recorded-data/'
-model_storage_path = '/home/bpanigr/Workspace/lin_angler_model'
+# root_path = '/scratch/bpanigr/fusion-network/recorded-data/'
+# model_storage_path = '/home/bpanigr/Workspace/lin_angler_model'
 
 
 def clear_dict(dict, epoch):
@@ -104,8 +104,16 @@ def run_validation(val_files, model, batch_size, epoch, optim):
                 gt_cmd_vel= gt_cmd_vel.to(device)
                 
                 pred_cmd = model(stacked_images, pcl, local_goal)
-                
 
+                # print(gt_cmd_vel.shape)
+                # print(pred_cmd.shape)
+
+                gt_cmd_vel[:,0] /= 10
+                gt_cmd_vel[:,1] /= 80
+
+                pred_cmd[:,0] /= 10
+                pred_cmd[:,1] /= 80
+                
                 # gt_x = torch.unsqueeze(gt_cmd_vel[:,0],1)
                 # gt_y = torch.unsqueeze(gt_cmd_vel[:,1],1)
 
@@ -127,12 +135,12 @@ def run_validation(val_files, model, batch_size, epoch, optim):
                 # per_file_total_loss.append(error_total.item())
                 
             # experiment.log_metric(name = str('val_'+val_file.split('/')[-1]+'_img'), value=np.average(per_file_loss_ǐmage), epoch = epoch + 1)
-            experiment.log_metric(name = str('val_'+val_file.split('/')[-1]+'_pcl'), value=np.average(per_file_loss_pcl), epoch = epoch + 1)
+            experiment.log_metric(name = str('val_'+val_file.split('/')[-1]+'_pcl'), value=math.sqrt(np.average(per_file_loss_pcl)), epoch = epoch + 1)
             # experiment.log_metric(name = str('val_'+val_file.split('/')[-1]+'_fusion'), value=np.average(per_file_loss_fusion), epoch = epoch + 1)
 
             running_error.append(np.average(per_file_loss_pcl))
         
-        avg_loss_on_validation = np.average(running_error)
+        avg_loss_on_validation = math.sqrt(np.average(running_error))
         # print(f'epoch:------>{epoch}')
         if (epoch+1) % 10 == 0:
             print(f"saving model weights at validation error {avg_loss_on_validation}")
@@ -141,7 +149,7 @@ def run_validation(val_files, model, batch_size, epoch, optim):
             'optimizer_state_dict': optim.state_dict(),
             }, f'{model_storage_path}/multi_modal_velocities_{epoch+1}.pth')
 
-        print(f'=========================> Average Validation error is:   {avg_loss_on_validation} \n')
+        print(f'=========================> Average Validation error is:   { avg_loss_on_validation } \n')
         return avg_loss_on_validation
             
 
@@ -152,7 +160,8 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
 
     model.to(device)
     optim = torch.optim.Adam(model.parameters(), lr=0.000004)     
-    # run_validation(val_dirs, model, batch_size, 0, optim)
+    run_validation(val_dirs, model, batch_size, 0, optim)
+    return
     # run_validation(val_dirs, model, batch_size, 2, optim)
     
     # ckpt = torch.load('/scratch/bpanigr/fusion-network/way_latest_model_at_40_2.343480117061302.pth')
@@ -227,7 +236,7 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
                 print(f'step is:   {index} and total error is :: {error_pcl.item()}\n')
             
             # experiment.log_metric(name = str(train_file.split('/')[-1]+ " mod:" +'img'), value=np.average(per_file_loss_ǐmage), epoch= epoch+1)
-            experiment.log_metric(name = str(train_file.split('/')[-1]+" mod:" +'pcl'), value=np.average(per_file_loss_pcl), epoch= epoch+1)
+            experiment.log_metric(name = str(train_file.split('/')[-1]+" mod:" +'pcl'), value=math.sqrt(np.average(per_file_loss_pcl)), epoch= epoch+1)
             # experiment.log_metric(name = str(train_file.split('/')[-1]+" mod:" +'fusion'), value=np.average(per_file_loss_fusion), epoch= epoch+1)
             running_loss.append(np.average(per_file_loss_pcl))   
             
@@ -236,9 +245,9 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
 
         if (epoch+1) % 2 == 0:
             val_error = run_validation(val_dirs, model, batch_size, epoch, optim)
-            experiment.log_metric( name = "Avg Validation loss", value = np.average(val_error), epoch= epoch+1)
+            experiment.log_metric( name = "Avg Validation loss", value = val_error, epoch= epoch+1)
         # val_error_at_epoch.append(val_error)
-        experiment.log_metric( name = "Avg Training loss", value = np.average(running_loss), epoch= epoch+1)
+        experiment.log_metric( name = "Avg Training loss", value = math.sqrt(np.average(running_loss)), epoch= epoch+1)
         
 
 
@@ -248,7 +257,7 @@ def main():
     
     train_dirs = [ os.path.join(train_path, dir) for dir in os.listdir(train_path)]
     val_dirs = [ os.path.join(validation_path, dir) for dir in os.listdir(validation_path)]
-    batch_size = 40
+    batch_size = 10
     epochs = 250
     run_training(train_dirs, val_dirs, batch_size, epochs)
 
