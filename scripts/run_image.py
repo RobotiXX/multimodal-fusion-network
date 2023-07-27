@@ -115,7 +115,7 @@ def run_validation(val_files, model, batch_size, epoch, optim):
                 
                 # error_fusion = get_loss(loss, fsn_lin, fsn_anglr, gt_x, gt_y,'fusion')
                 # error_img = get_loss(loss, img_lin, img_anglr, gt_x, gt_y, 'img')
-                error_pcl = get_loss(loss, pts/100, gt_pts/100, 'validation')
+                error_pcl = get_loss(loss, pts/150, gt_pts/150, 'validation')
                 
                 # error_total = error_fusion + ( 0.2 * error_img) + error_pcl
 
