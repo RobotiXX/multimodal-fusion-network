@@ -18,24 +18,22 @@ class ImageHeadMLP(nn.Module):
 
 
         self.common = nn.Sequential(
-            nn.Linear(512,128),            
+            nn.Linear(36864,256),            
             nn.LeakyReLU(),
-            nn.Linear(128,128),            
+            nn.Linear(256,128),            
             nn.ReLU(),
         )
 
         self.concat_goal = nn.Sequential(
             nn.Linear(64+128,128),            
-            nn.LeakyReLU(),
-            nn.Linear(128,64),            
-            nn.LeakyReLU(),
+            nn.LeakyReLU()
         )
 
-        self.way_pts = nn.Linear(64,10)
+        self.way_pts = nn.Linear(128,10)
 
     def forward(self, input, goal):
         
-        image_features, fusion_feat = self.backbone(input)                
+        image_features = self.backbone(input)                
         goal = self.goal_encoder(goal)
 
         feat_shared_common = self.common(image_features)

@@ -152,8 +152,8 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
     
     # run_validation(val_dirs, model, batch_size, 2, optim)
     
-    ckpt = torch.load('/home/bpanigr/Workspace/img_way_pts_model_at_60.pth')
-    model.load_state_dict(ckpt['model_state_dict'])
+    # ckpt = torch.load('/home/ranjan/Workspace/my_works/fusion-network/scripts/pre_img_way_pts_model_at_110.pth')
+    # model.load_state_dict(ckpt['model_state_dict'])
     # run_validation(val_dirs, model, batch_size, 0, optim)
     # return
     # run_validation(val_dirs, model, batch_size, 0, optim)
@@ -245,9 +245,9 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
 
 def main():
     train_path = "/scratch/bpanigr/fusion-network/recorded-data/train"
-    # train_path = "../recorded-data/sandbox"
+    # train_path = "../recorded-data/train"
     train_dirs = [ os.path.join(train_path, dir) for dir in os.listdir(train_path)]
-    # validation_path = '/home/ranjan/Workspace/my_works/fusion-network/recorded-data/train_temp'
+    # validation_path = '/home/ranjan/Workspace/my_works/fusion-network/recorded-data/val'
     validation_path = '/scratch/bpanigr/fusion-network/recorded-data/val'
     val_dirs = [ os.path.join(validation_path, dir) for dir in os.listdir(validation_path)]
     batch_size = 45
