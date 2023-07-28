@@ -25,9 +25,10 @@ class PclMLP(nn.Module):
 
         self.previous = nn.Sequential(
             nn.Linear(64+128,128),
-            nn.LeakyReLU(),
-            nn.Linear(128,10)            
+            nn.LeakyReLU()            
         )
+
+        self.predict = nn.Linear(128,10)            
 
         self.goal_encoder = make_mlp( [2, 64, 128, 64], 'relu', False, False, 0.0)
                 
@@ -42,9 +43,11 @@ class PclMLP(nn.Module):
         feat_shared = self.common(point_cloud_feat)
         feat_shared = torch.cat([feat_shared, goal],dim=-1)
 
-        y = self.previous(feat_shared)
-          
-        return y
+        prev_feat = self.previous(feat_shared)
+        
+        prediction = self.predict(prev_feat)
+
+        return prediction
 
 
 

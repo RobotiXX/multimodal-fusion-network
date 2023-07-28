@@ -19,9 +19,11 @@ from torch.optim.lr_scheduler import MultiStepLR, CosineAnnealingWarmRestarts, C
 experiment = Experiment(
     api_key="Ly3Tc8W7kfxPmAxsArJjX9cgo",
     # project_name= "test",
-    project_name="kkk",
+    project_name="image-only",
     workspace="bhabaranjan",
 )
+
+experiment.add_tag('point-cloud')
 
 coloredlogs.install()
 
@@ -37,7 +39,7 @@ def get_data_loader(input_file_path, read_type, batch_size):
     logging.info(f'Reading {read_type} file from path {input_file_path}')
     indexer = IndexDataset(input_file_path)
     transformer = ApplyTransformation(indexer)
-    data_loader = DataLoader(transformer, batch_size = batch_size, drop_last=False, shuffle=True, prefetch_factor=2,num_workers=2)
+    data_loader = DataLoader(transformer, batch_size = batch_size, drop_last=False, shuffle=True, prefetch_factor=2,num_workers=8)
     return data_loader
 
 def get_loss_prev(loss_fn, lin_vel, angular_vel, gt_lin, gt_angular, data_src):
@@ -68,15 +70,20 @@ def run_validation(val_files, model, batch_size, epoch, optim):
        model.eval()
        with torch.no_grad():
         for val_file in val_files:
-            val_loader = get_data_loader( val_file, 'validation', batch_size = batch_size )
-
+            
+            val_loader = None
+            if val_file not in val_dict:
+                val_loader = get_data_loader( val_file, 'validation', batch_size = batch_size )
+                val_dict[val_file] = val_loader
+            else:
+                val_loader = val_dict[val_file]
 
             per_file_loss_fusion  = []
             per_file_loss_ǐmage = []
             per_file_loss_pcl = []
             per_file_total_loss = []
             for index, (stacked_images, pcl ,local_goal, gt_pts) in tqdm(enumerate(val_loader)):
-                stacked_images = stacked_images.to(device)
+                # stacked_images = stacked_images.to(device)
                 pcl = pcl.to(device)
                 local_goal= local_goal.to(device)
                 
@@ -98,7 +105,7 @@ def run_validation(val_files, model, batch_size, epoch, optim):
                 
                 # error_fusion = get_loss(loss, fsn_lin, fsn_anglr, gt_x, gt_y,'fusion')
                 # error_img = get_loss(loss, img_lin, img_anglr, gt_x, gt_y, 'img')
-                error_pcl = get_loss(loss, pts/100, gt_pts/100, 'validation')
+                error_pcl = get_loss(loss, pts/150, gt_pts/150, 'validation')
                 
                 # error_total = error_fusion + ( 0.2 * error_img) + error_pcl
 
@@ -120,7 +127,7 @@ def run_validation(val_files, model, batch_size, epoch, optim):
             torch.save({
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optim.state_dict(),
-            }, f'/scratch/bpanigr/fusion-network/way_pts2_model_at_{epoch+1}_{avg_loss_on_validation}.pth')
+            }, f'/scratch/bpanigr/fusion-network/tf_way_pts2_model_at_{epoch+1}_{avg_loss_on_validation}.pth')
 
         print(f'=========================> Average Validation error is:   {avg_loss_on_validation} \n')
         return avg_loss_on_validation
@@ -135,13 +142,13 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
     # run_validation(val_dirs, model, batch_size, 0, optim)
     # run_validation(val_dirs, model, batch_size, 2, optim)
     
-    ckpt = torch.load('/scratch/bpanigr/fusion-network/way_latest_model_at_40_2.343480117061302.pth')
-    model.load_state_dict(ckpt['model_state_dict'])
+    # ckpt = torch.load('/scratch/bpanigr/fusion-network/way_pts2_model_at_120_0.013270827467591461.pth')
+    # model.load_state_dict(ckpt['model_state_dict'])
     # run_validation(val_dirs, model, batch_size, 0, optim)
     # return
 
     optim.param_groups[0]['lr'] = 0.000004
-    scheduler = MultiStepLR(optim, milestones= [25,70], gamma=.6)
+    scheduler = MultiStepLR(optim, milestones= [10,30,80], gamma=.8)
 
     print(scheduler.get_last_lr())
     data_dict = {}
@@ -171,7 +178,7 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
                 # print(f'gt_cmd: {gt_cmd_vel}')
                 # print(f'prev_cmd_vel:{prev_cmd_vel}')
                 
-                stacked_images = stacked_images.to(device)
+                # stacked_images = stacked_images.to(device)
                 pcl = pcl.to(device)
                 local_goal= local_goal.to(device)                
                 gt_pts= gt_cmd_vel.to(device)
