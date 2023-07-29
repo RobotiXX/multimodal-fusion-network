@@ -6,6 +6,7 @@ from random import shuffle
 
 from data_builder.indexer import IndexDataset
 from data_builder.transformer import ApplyTransformation
+from data_builder.gaussian_weights import get_gaussian_weights
 from model_builder.multimodal.fusion_net import BcFusionModel
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
@@ -24,6 +25,8 @@ experiment = Experiment(
     workspace="bhabaranjan",
 )
 
+experiment.add_tag('image-model')
+
 coloredlogs.install()
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -33,6 +36,12 @@ print(f'Using device ========================================>  {device}')
 min_val_error = 100000
 
 val_dict = {}
+
+weights = get_gaussian_weights(7.5,4.5)
+weights = weights[:,:-1] 
+weights = np.concatenate([weights, weights], axis=1)
+weights = torch.tensor(weights)
+weights = weights.to(device)
 
 
 def clear_dict(dict, epoch):
@@ -46,7 +55,7 @@ def get_data_loader(input_file_path, read_type, batch_size):
     logging.info(f'Reading {read_type} file from path {input_file_path}')
     indexer = IndexDataset(input_file_path)
     transformer = ApplyTransformation(indexer)
-    data_loader = DataLoader(transformer, batch_size = batch_size, drop_last=False, shuffle=True, prefetch_factor=2,num_workers=4)
+    data_loader = DataLoader(transformer, batch_size = batch_size, drop_last=False, shuffle=True, prefetch_factor=2,num_workers=8)
     return data_loader
 
 def get_loss_prev(loss_fn, lin_vel, angular_vel, gt_lin, gt_angular, data_src):
@@ -115,7 +124,7 @@ def run_validation(val_files, model, batch_size, epoch, optim):
                 
                 # error_fusion = get_loss(loss, fsn_lin, fsn_anglr, gt_x, gt_y,'fusion')
                 # error_img = get_loss(loss, img_lin, img_anglr, gt_x, gt_y, 'img')
-                error_pcl = get_loss(loss, pts/150, gt_pts/150, 'validation')
+                error_pcl = get_loss(loss, pts/weights, gt_pts/weights, 'validation')
                 
                 # error_total = error_fusion + ( 0.2 * error_img) + error_pcl
 
@@ -137,7 +146,7 @@ def run_validation(val_files, model, batch_size, epoch, optim):
             torch.save({
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optim.state_dict(),
-            }, f'/home/bpanigr/Workspace/pre_img_way_pts_model_at_{epoch+1}.pth')
+            }, f'/home/bpanigr/Workspace/gw_img_way_pts_model_at_{epoch+1}.pth')
 
         print(f'=========================> Average Validation error is:   {avg_loss_on_validation} \n')
         return avg_loss_on_validation
@@ -148,7 +157,7 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
     loss = torch.nn.MSELoss()
     model = ImageHeadMLP()
     model.to(device)
-    optim = torch.optim.Adam(model.parameters(), lr = 0.0000046)     
+    optim = torch.optim.Adam(model.parameters(), lr = 0.00000288)     
     
     # run_validation(val_dirs, model, batch_size, 2, optim)
     
@@ -158,7 +167,7 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
     # return
     # run_validation(val_dirs, model, batch_size, 0, optim)
     
-    scheduler = MultiStepLR(optim, milestones= [30,70,110], gamma=.8)
+    scheduler = MultiStepLR(optim, milestones= [40,70,110], gamma=.8)
 
 
     data_dict = {}
@@ -247,10 +256,10 @@ def main():
     train_path = "/scratch/bpanigr/fusion-network/recorded-data/train"
     # train_path = "../recorded-data/train"
     train_dirs = [ os.path.join(train_path, dir) for dir in os.listdir(train_path)]
-    # validation_path = '/home/ranjan/Workspace/my_works/fusion-network/recorded-data/val'
+    # validation_path = '../recorded-data/val'
     validation_path = '/scratch/bpanigr/fusion-network/recorded-data/val'
     val_dirs = [ os.path.join(validation_path, dir) for dir in os.listdir(validation_path)]
-    batch_size = 45
+    batch_size = 40
     epochs = 250
     run_training(train_dirs, val_dirs, batch_size, epochs)
 

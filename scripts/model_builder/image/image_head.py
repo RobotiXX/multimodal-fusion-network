@@ -18,18 +18,18 @@ class ImageHeadMLP(nn.Module):
 
 
         self.common = nn.Sequential(
-            nn.Linear(36864,256),            
+            nn.Linear(36864, 512),            
             nn.LeakyReLU(),
-            nn.Linear(256,128),            
+            nn.Linear(512,256),            
             nn.ReLU(),
         )
 
         self.concat_goal = nn.Sequential(
-            nn.Linear(64+128,128),            
+            nn.Linear(64+256,256),            
             nn.LeakyReLU()
         )
 
-        self.way_pts = nn.Linear(128,10)
+        self.way_pts = nn.Linear(256,22)
 
     def forward(self, input, goal):
         
