@@ -19,19 +19,19 @@ class PclBackbone(nn.Module):
             nn.LeakyReLU(),
             nn.Conv3d(in_channels=8, out_channels=12, kernel_size=3, stride=1),
             nn.LeakyReLU(),   
-            nn.MaxPool3d(3, stride=2)                   
+            nn.MaxPool3d(3, stride=(2,2,1))                   
             )
 
         self.ft1 = nn.Sequential(
             nn.Conv3d(in_channels=12, out_channels=16, kernel_size=3, stride=1),
             nn.LeakyReLU(),
-            nn.MaxPool3d(3, stride=2)
+            nn.MaxPool3d(3, stride=(2,2,2))                   
         )
 
         self.ft2 = nn.Sequential(
             nn.Conv3d(in_channels=16, out_channels=32, kernel_size=5, stride=1),
-            nn.LeakyReLU(),
-            nn.MaxPool3d(3, stride=2)
+            nn.LeakyReLU(),   
+            nn.MaxPool3d(3, stride=(2,2,1))                            
         )
 
         self.ft3 = nn.Sequential(
@@ -43,6 +43,7 @@ class PclBackbone(nn.Module):
     def forward(self, input):
              
         batchsize = input.size()[0]
+        # print(input.size())
         feat_shared = self.common(input)
 
         feat_l1 = self.ft1(feat_shared)

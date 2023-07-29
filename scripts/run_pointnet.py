@@ -232,9 +232,11 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
 
 
 def main():
-    train_path = "/scratch/bpanigr/fusion-network/recorded-data/train"
+    # train_path = "/scratch/bpanigr/fusion-network/recorded-data/train"
+    train_path = "../recorded-data/train"
     train_dirs = [ os.path.join(train_path, dir) for dir in os.listdir(train_path)]
-    validation_path = '/scratch/bpanigr/fusion-network/recorded-data/val'
+    # validation_path = '/scratch/bpanigr/fusion-network/recorded-data/val'
+    validation_path = '../recorded-data/val'
     val_dirs = [ os.path.join(validation_path, dir) for dir in os.listdir(validation_path)]
     batch_size = 40
     epochs = 250

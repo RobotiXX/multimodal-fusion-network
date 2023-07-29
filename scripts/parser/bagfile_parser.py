@@ -42,8 +42,8 @@ def odom_callback(odom):
         # then use current point as a local goal of the previous position(robot's prev location)
         # TODO: should be done as a perpendicular intersection instead of delta approximation of 2
 
-        if ((previous_rbt_location[key][0] - position.x) ** 2 + (previous_rbt_location[key][1] - position.y) ** 2 ) >= 0.236:
-            if  len(play_back_snapshot[key]["local_goal"]) < 6:
+        if ((previous_rbt_location[key][0] - position.x) ** 2 + (previous_rbt_location[key][1] - position.y) ** 2 ) >= 0.2299:
+            if  len(play_back_snapshot[key]["local_goal"]) < 12:
                 play_back_snapshot[key]["local_goal"].append((position.x, position.y))
                 previous_rbt_location[key][0] = position.x
                 previous_rbt_location[key][1] = position.y
