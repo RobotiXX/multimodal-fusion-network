@@ -11,6 +11,7 @@ import pyquaternion as pq
 from torch.utils.data import Dataset
 from scipy.spatial.transform import Rotation as R
 from data_builder.transformer_pcl import get_voxelized_points
+from data_builder.gaussian_weights import get_gaussian_weights
 
 coloredlogs.install()
 
@@ -57,9 +58,9 @@ class ApplyTransformation(Dataset):
         tf_matrix = get_transformation_matrix(self.robot_position[0],self.robot_position[1])     
         tf_inverse = np.linalg.pinv(tf_matrix)
 
-        goals = np.concatenate([ np.array(self.way_pts), np.ones((6,1))], axis=1).transpose()
+        goals = np.concatenate([ np.array(self.way_pts), np.ones((12,1))], axis=1).transpose()
 
-        all_pts = np.matmul(tf_inverse, goals) * 150
+        all_pts = np.matmul(tf_inverse, goals) * get_gaussian_weights(7.5,4.5)
         all_pts = all_pts[:2, :-1]
         local_goal = all_pts[:, -1]
 

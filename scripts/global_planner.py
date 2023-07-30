@@ -23,24 +23,33 @@ from scipy.spatial.transform import Rotation as R
 
 from model_builder.pcl.pcl_head import PclMLP
 from transformer import ApplyTransformation
+from data_builder.gaussian_weights import get_gaussian_weights
 
 
 device = "cuda:1" if torch.cuda.is_available() else "cpu"
 
 print(f'Using device ========================================>  {device}')
 
+weights_base = get_gaussian_weights(7.5,4.5)[:,:-1] 
+weights = np.concatenate([weights_base, weights_base], axis=1)
+weights = torch.tensor(weights)
+weights = weights.to(device)
+
+
 model = PclMLP()
 model.to(device)
-ckpt = torch.load('/home/ranjan/Workspace/my_works/fusion-network/scripts/tf_way_pts2_model_at_130_0.016991762869687396.pth')
+ckpt = torch.load('/home/ranjan/Workspace/my_works/fusion-network/scripts/prev_reformatted_way_pts2_model_at_100_0.06725561780258968.pth')
 model.load_state_dict(ckpt['model_state_dict'])
 model.eval()
 
 content = None
-path = '/home/ranjan/Workspace/my_works/fusion-network/recorded-data/train/138184_lc_sw_sc/snapshot.pickle'
+path = '/home/ranjan/Workspace/my_works/fusion-network/recorded-data/val/138258_lg_cwd/snapshot.pickle'
 
 with open(path, 'rb') as data:
     content = pickle.load(data)
 v = 'local_goal'
+
+
 print(f'content loaded: {content[0][v]}')
 
 counter = {'index': 0, 'sub-sampler': 1}
@@ -75,7 +84,7 @@ def marker_callback(xs, ys):
     points_list = []
     points_list.append(Point(y=0,x= 0,z=0))
 
-    for i in range(5):    
+    for i in range(11):    
         points_list.append(Point(y=ys[i],x= xs[i],z=0))
 
     marker.points.extend(points_list)
@@ -101,9 +110,9 @@ def marker_gt(xs, ys):
     marker.pose.orientation = Quaternion(0,0,0,1)
 
     points_list = []
-    points_list.append(Point(y=0,x= 0,z=0))
+    points_list.append(Point(y=0,x=0,z=0))
 
-    for i in range(5):    
+    for i in range(11):    
         points_list.append(Point(y=ys[i],x= xs[i],z=0))
 
     marker.points.extend(points_list)
@@ -117,8 +126,11 @@ def marker_gt(xs, ys):
 
 def get_goals(pts, way_pts):
     goals = pts.detach().cpu().numpy()[0]
-    x = goals[:5]
-    y = goals[5:]
+
+    way_pts = way_pts / weights_base
+
+    x = goals[:11]
+    y = goals[11:]
 
     wx = way_pts[0,:]
     wy = way_pts[1,:]
@@ -181,7 +193,7 @@ def aprrox_sync_callback(lidar, rgb, odom):
             # print("in")
             pts = model(pcl,local_goal)
             # print("out")
-            get_goals(pts/150, way_pts/150)
+            get_goals(pts/weights, way_pts)
             counter['index'] += 1
             print(counter['index'])            
             counter['sub-sampler'] = 0

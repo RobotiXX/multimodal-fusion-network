@@ -20,11 +20,11 @@ from torch.optim.lr_scheduler import MultiStepLR, CosineAnnealingWarmRestarts, C
 experiment = Experiment(
     api_key="Ly3Tc8W7kfxPmAxsArJjX9cgo",
     # project_name= "test",
-    project_name="image-only",
+    # project_name="image-only",
     workspace="bhabaranjan",
 )
 
-experiment.add_tag('point-cloud-l1')
+experiment.add_tag('pcl-l1-backbone-modified')
 
 coloredlogs.install()
 
@@ -134,7 +134,7 @@ def run_validation(val_files, model, batch_size, epoch, optim):
             torch.save({
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optim.state_dict(),
-            }, f'/scratch/bpanigr/fusion-network/prev_reformatted_way_pts2_model_at_{epoch+1}_{avg_loss_on_validation}.pth')
+            }, f'/scratch/bpanigr/fusion-network/pcl_backbone_changed_model_at_{epoch+1}_{avg_loss_on_validation}.pth')
 
         print(f'=========================> Average Validation error is:   {avg_loss_on_validation} \n')
         return avg_loss_on_validation
@@ -145,17 +145,17 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
     loss = torch.nn.L1Loss()
     model = PclMLP()
     model.to(device)
-    optim = torch.optim.Adam(model.parameters(), lr=0.0000028)     
+    optim = torch.optim.Adam(model.parameters(), lr=0.0000048)     
     # run_validation(val_dirs, model, batch_size, 0, optim)
     # run_validation(val_dirs, model, batch_size, 2, optim)
     
-    ckpt = torch.load('/scratch/bpanigr/fusion-network/reformatted_way_pts2_model_at_70_0.016218955743389375.pth')
-    model.load_state_dict(ckpt['model_state_dict'])
+    # ckpt = torch.load('/scratch/bpanigr/fusion-network/reformatted_way_pts2_model_at_70_0.016218955743389375.pth')
+    # model.load_state_dict(ckpt['model_state_dict'])
     # run_validation(val_dirs, model, batch_size, 0, optim)
     # return
 
     # optim.param_groups[0]['lr'] = 0.000004
-    scheduler = MultiStepLR(optim, milestones= [30,70,100], gamma=.72)
+    scheduler = MultiStepLR(optim, milestones= [20,40,80], gamma=.74)
 
     # print(scheduler.get_last_lr())
     data_dict = {}
@@ -240,16 +240,18 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
 
 def main():
     train_path = "/scratch/bpanigr/fusion-network/recorded-data/train"
-    # train_path = "../recorded-data/train"
-    train_dirs = [ os.path.join(train_path, dir) for dir in os.listdir(train_path)]
     validation_path = '/scratch/bpanigr/fusion-network/recorded-data/val'
-    # validation_path = '../recorded-data/val'
+    # validation_path = '../recorded-data/val'    
+    # train_path = "../recorded-data/train"
+
+    train_dirs = [ os.path.join(train_path, dir) for dir in os.listdir(train_path)]
+    
     val_dirs = [ os.path.join(validation_path, dir) for dir in os.listdir(validation_path)]
 
     train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/136021_wt')
     train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/138181_wt')
 
-    batch_size = 50
+    batch_size = 40
     epochs = 250
     run_training(train_dirs, val_dirs, batch_size, epochs)
 

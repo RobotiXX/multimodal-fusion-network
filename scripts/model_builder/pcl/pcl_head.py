@@ -17,25 +17,25 @@ class PclMLP(nn.Module):
         self.backbone_pcl = PclBackbone().float()
 
         self.common = nn.Sequential(
-            nn.Linear(84480, 1024),
-            nn.LeakyReLU()                              
+            nn.Linear(158400, 1024),
+            nn.ELU()                              
         )
 
         self.previous = nn.Sequential(
             nn.Linear(64+1024,512),
-            nn.LeakyReLU()            
+            nn.ELU()            
         )
 
         self.predict = nn.Linear(512,22)            
 
-        self.goal_encoder = make_mlp( [2, 64, 128, 64], 'relu', False, False, 0.0)
+        self.goal_encoder = make_mlp( [2, 128, 64], 'relu', False, False, 0.0)
                 
 
     def forward(self, input, goal):
         
         
         point_cloud_feat = self.backbone_pcl(input.float())
-        print(f'point cloud: {point_cloud_feat.shape}')
+        # print(f'point cloud: {point_cloud_feat.shape}')
         goal = self.goal_encoder(goal)        
 
         feat_shared = self.common(point_cloud_feat)

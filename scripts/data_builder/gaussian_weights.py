@@ -14,7 +14,7 @@ def get_gaussian_weights(mean, std_dev):
     # for i in range(range_values.shape[0]):    
     #     print("Value at x =", i, "is", np.floor(range_values[i]*1000)+100)
     
-    round_weights = np.floor(range_values * 1000) + 100
+    round_weights = np.floor(range_values * 10000)
     reshapeed_weights  = np.expand_dims(round_weights, axis=0)
     
     return  reshapeed_weights
