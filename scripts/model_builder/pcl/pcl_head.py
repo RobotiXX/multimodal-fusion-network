@@ -16,15 +16,16 @@ class PclMLP(nn.Module):
 
         self.backbone_pcl = PclBackbone().float()
 
-        self.common = nn.Sequential(
-            nn.Linear(158400, 1024),
-            nn.ELU()                              
-        )
+        self.lstm_input = 158400+64
+        self.hidden_state_dim = 1024
+        self.num_layers = 2
 
-        self.previous = nn.Sequential(
-            nn.Linear(64+1024,512),
-            nn.ELU()            
-        )
+        self.lstm = nn.LSTM(self.lstm_input, self.hidden_state_dim, self.num_layers, batch_first=True)
+
+        self.after_lstm = nn.Sequential(
+            nn.Linear(1024,512),
+            nn.ELU()                              
+        )        
 
         self.predict = nn.Linear(512,22)            
 
@@ -33,17 +34,27 @@ class PclMLP(nn.Module):
 
     def forward(self, input, goal):
         
-        
-        point_cloud_feat = self.backbone_pcl(input.float())
-        # print(f'point cloud: {point_cloud_feat.shape}')
-        goal = self.goal_encoder(goal)        
+        batch_size = input.size()[0]
 
-        feat_shared = self.common(point_cloud_feat)
-        feat_shared = torch.cat([feat_shared, goal],dim=-1)
+        h0 = torch.zeros(self.num_layers, batch_size, self.hidden_state_dim, device='cuda')
+        c0 = torch.zeros(self.num_layers, batch_size, self.hidden_state_dim,device='cuda')
 
-        prev_feat = self.previous(feat_shared)
+        point_cloud_feat = self.backbone_pcl(input.float())        
+        goal = self.goal_encoder(goal)            
         
-        prediction = self.predict(prev_feat)
+        pcl_goal_concat = torch.cat([point_cloud_feat, goal],dim=-1)
+        
+        pcl_goal_concat = pcl_goal_concat.unsqueeze(1)
+
+        lstm_out, (hn, cn) = self.lstm(pcl_goal_concat, (h0,c0))
+
+        print(f'lstm output: {lstm_out.shape}')
+
+        output = lstm_out[:, -1, :]
+
+        final_feat = self.after_lstm(output)
+        
+        prediction = self.predict(final_feat)
 
         return prediction
 

@@ -20,11 +20,11 @@ from torch.optim.lr_scheduler import MultiStepLR, CosineAnnealingWarmRestarts, C
 experiment = Experiment(
     api_key="Ly3Tc8W7kfxPmAxsArJjX9cgo",
     # project_name= "test",
-    # project_name="image-only",
+    project_name="image-only",
     workspace="bhabaranjan",
 )
 
-experiment.add_tag('pcl-l1-backbone-modified')
+experiment.add_tag('pcl-l1-LSTM')
 
 coloredlogs.install()
 
@@ -46,7 +46,7 @@ def get_data_loader(input_file_path, read_type, batch_size):
     logging.info(f'Reading {read_type} file from path {input_file_path}')
     indexer = IndexDataset(input_file_path)
     transformer = ApplyTransformation(indexer)
-    data_loader = DataLoader(transformer, batch_size = batch_size, drop_last=False, shuffle=True, prefetch_factor=2,num_workers=12)
+    data_loader = DataLoader(transformer, batch_size = batch_size, drop_last=False, prefetch_factor=2,num_workers=12)
     return data_loader
 
 def get_loss_prev(loss_fn, lin_vel, angular_vel, gt_lin, gt_angular, data_src):
@@ -73,7 +73,7 @@ def get_loss(loss_fn, pts, gt_pts, data_src):
 def run_validation(val_files, model, batch_size, epoch, optim):
        print("Running Validation..\n")
        running_error = []
-       loss = torch.nn.L1Loss()
+       loss = torch.nn.MSELoss()
        model.eval()
        with torch.no_grad():
         for val_file in val_files:
@@ -142,10 +142,10 @@ def run_validation(val_files, model, batch_size, epoch, optim):
 
 
 def run_training(train_files, val_dirs, batch_size, num_epochs):
-    loss = torch.nn.L1Loss()
+    loss = torch.nn.MSELoss()
     model = PclMLP()
     model.to(device)
-    optim = torch.optim.Adam(model.parameters(), lr=0.0000048)     
+    optim = torch.optim.Adam(model.parameters(), lr=0.000004)     
     # run_validation(val_dirs, model, batch_size, 0, optim)
     # run_validation(val_dirs, model, batch_size, 2, optim)
     
@@ -155,7 +155,7 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
     # return
 
     # optim.param_groups[0]['lr'] = 0.000004
-    scheduler = MultiStepLR(optim, milestones= [20,40,80], gamma=.74)
+    scheduler = MultiStepLR(optim, milestones= [10,30,80], gamma=.8)
 
     # print(scheduler.get_last_lr())
     data_dict = {}
