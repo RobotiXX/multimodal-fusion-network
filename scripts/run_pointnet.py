@@ -24,7 +24,7 @@ experiment = Experiment(
     workspace="bhabaranjan",
 )
 
-experiment.add_tag('pcl-LSTM-seq-l1')
+experiment.add_tag('pcl-RNN-seq-l1')
 
 coloredlogs.install()
 
@@ -46,7 +46,7 @@ def get_loss_fun(loss_type = None):
     if loss_type == 'mse':
         return torch.nn.MSELoss()
     else:
-        torch.nn.L1Loss()
+       return torch.nn.L1Loss()
 
 
 def get_data_loader(input_file_path, read_type, batch_size):
@@ -135,7 +135,7 @@ def run_validation(val_files, model, batch_size, epoch, optim):
             running_error.append(np.average(per_file_loss_pcl))
         
         avg_loss_on_validation = np.average(running_error)
-        # print(f'epoch:------>{epoch}')
+        print(f'epoch:------>{epoch}')
         if (epoch+1) % 10 == 0:
             print(f"saving model weights at validation error {avg_loss_on_validation}")
             torch.save({
@@ -152,7 +152,7 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
     loss = get_loss_fun()
     model = PclMLP()
     model.to(device)
-    optim = torch.optim.Adam(model.parameters(), lr=0.000004)     
+    optim = torch.optim.Adam(model.parameters(), lr=0.0000098)     
     # run_validation(val_dirs, model, batch_size, 0, optim)
     # run_validation(val_dirs, model, batch_size, 2, optim)
     
@@ -162,7 +162,7 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
     # return
 
     # optim.param_groups[0]['lr'] = 0.000004
-    scheduler = MultiStepLR(optim, milestones= [20,40,80], gamma=.8)
+    scheduler = MultiStepLR(optim, milestones= [30,50,80], gamma=.8)
 
     # print(scheduler.get_last_lr())
     data_dict = {}

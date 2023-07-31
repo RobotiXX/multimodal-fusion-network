@@ -18,11 +18,11 @@ class PclMLP(nn.Module):
 
         self.lstm_input = 158400+64
         self.hidden_state_dim = 1024
-        self.num_layers = 2
+        self.num_layers = 4
 
-        self.lstm = nn.LSTM(self.lstm_input, self.hidden_state_dim, self.num_layers, batch_first=True)
+        self.rnn = nn.RNN(self.lstm_input, self.hidden_state_dim, self.num_layers, nonlinearity='relu',batch_first=True)
 
-        self.after_lstm = nn.Sequential(
+        self.after_rnn = nn.Sequential(
             nn.Linear(1024,512),
             nn.ELU()                              
         )        
@@ -34,10 +34,10 @@ class PclMLP(nn.Module):
 
     def forward(self, input, goal):
         
-        batch_size = input.size()[0]
+        # batch_size = input.size()[0]
 
         h0 = torch.zeros(self.num_layers, 1, self.hidden_state_dim, device='cuda')
-        c0 = torch.zeros(self.num_layers, 1, self.hidden_state_dim,device='cuda')
+        # c0 = torch.zeros(self.num_layers, 1, self.hidden_state_dim,device='cuda')
 
         point_cloud_feat = self.backbone_pcl(input.float())        
         goal = self.goal_encoder(goal)            
@@ -46,13 +46,13 @@ class PclMLP(nn.Module):
         
         pcl_goal_concat = pcl_goal_concat.unsqueeze(0)
 
-        lstm_out, (hn, cn) = self.lstm(pcl_goal_concat, (h0,c0))
+        rnn_out, _ = self.rnn(pcl_goal_concat, h0)
 
-        print(f'lstm output: {lstm_out.shape}')
+        # print(f'rnn output: {rnn_out.shape}')
 
-        lstm_out = lstm_out.squeeze(0)
+        rnn_out = rnn_out.squeeze(0)
 
-        final_feat = self.after_lstm(lstm_out)
+        final_feat = self.after_rnn(rnn_out)
         
         prediction = self.predict(final_feat)
 
