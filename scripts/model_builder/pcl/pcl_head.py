@@ -36,23 +36,23 @@ class PclMLP(nn.Module):
         
         batch_size = input.size()[0]
 
-        h0 = torch.zeros(self.num_layers, batch_size, self.hidden_state_dim, device='cuda')
-        c0 = torch.zeros(self.num_layers, batch_size, self.hidden_state_dim,device='cuda')
+        h0 = torch.zeros(self.num_layers, 1, self.hidden_state_dim, device='cuda')
+        c0 = torch.zeros(self.num_layers, 1, self.hidden_state_dim,device='cuda')
 
         point_cloud_feat = self.backbone_pcl(input.float())        
         goal = self.goal_encoder(goal)            
         
         pcl_goal_concat = torch.cat([point_cloud_feat, goal],dim=-1)
         
-        pcl_goal_concat = pcl_goal_concat.unsqueeze(1)
+        pcl_goal_concat = pcl_goal_concat.unsqueeze(0)
 
         lstm_out, (hn, cn) = self.lstm(pcl_goal_concat, (h0,c0))
 
         print(f'lstm output: {lstm_out.shape}')
 
-        output = lstm_out[:, -1, :]
+        lstm_out = lstm_out.squeeze(0)
 
-        final_feat = self.after_lstm(output)
+        final_feat = self.after_lstm(lstm_out)
         
         prediction = self.predict(final_feat)
 
