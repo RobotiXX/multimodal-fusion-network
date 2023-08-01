@@ -37,7 +37,7 @@ min_val_error = 100000
 
 val_dict = {}
 
-weights = get_gaussian_weights(7.5,4.5)
+weights = get_gaussian_weights(6,3)
 weights = weights[:,:-1] 
 weights = np.concatenate([weights, weights], axis=1)
 weights = torch.tensor(weights)
@@ -85,7 +85,7 @@ def get_loss(loss_fn, pts, gt_pts, data_src):
 def run_validation(val_files, model, batch_size, epoch, optim):
        print("Running Validation..\n")
        running_error = []
-       loss = torch.nn.MSELoss()
+       loss = torch.nn.L1Loss()
        model.eval()
        with torch.no_grad():
         for val_file in val_files:
@@ -154,7 +154,7 @@ def run_validation(val_files, model, batch_size, epoch, optim):
 
 
 def run_training(train_files, val_dirs, batch_size, num_epochs):
-    loss = torch.nn.MSELoss()
+    loss = torch.nn.L1Loss()
     model = ImageHeadMLP()
     model.to(device)
     optim = torch.optim.Adam(model.parameters(), lr = 0.00000288)     

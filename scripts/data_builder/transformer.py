@@ -69,7 +69,7 @@ class ApplyTransformation(Dataset):
 
         goals = np.concatenate([ np.array(self.way_pts), np.ones((12,1))], axis=1).transpose()
 
-        all_pts = np.matmul(tf_inverse, goals) * get_gaussian_weights(7.5,4.5)
+        all_pts = np.matmul(tf_inverse, goals) * get_gaussian_weights(6,3)
         all_pts = all_pts[:2, :]
 
         way_pts = all_pts[:, :-1]
