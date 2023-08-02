@@ -30,15 +30,16 @@ device = "cuda:1" if torch.cuda.is_available() else "cpu"
 
 print(f'Using device ========================================>  {device}')
 
-weights_base = get_gaussian_weights(7.5,4.5)[:,:-1] 
+weights_base = get_gaussian_weights(6,3)[:,:-1] 
+# print(weights_base)
 weights = np.concatenate([weights_base, weights_base], axis=1)
-weights = torch.tensor(weights)
-weights = weights.to(device)
+# weights = torch.tensor(weights)
+# weights = weights.to(device)
 
 
 model = PclMLP()
 model.to(device)
-ckpt = torch.load('/home/ranjan/Workspace/my_works/fusion-network/scripts/prev_reformatted_way_pts2_model_at_100_0.06725561780258968.pth')
+ckpt = torch.load('/home/ranjan/Workspace/my_works/fusion-network/scripts/pcl_backbone_changed_model_at_100_0.08454692389459491.pth')
 model.load_state_dict(ckpt['model_state_dict'])
 model.eval()
 
@@ -128,9 +129,15 @@ def get_goals(pts, way_pts):
     goals = pts.detach().cpu().numpy()[0]
 
     way_pts = way_pts / weights_base
+    goals = goals / weights
 
-    x = goals[:11]
-    y = goals[11:]
+    
+
+    x = goals[0, :11]
+    y = goals[0, 11:]
+
+    print(f'x : {x.shape}')
+    print(f'y : {y.shape}')
 
     wx = way_pts[0,:]
     wy = way_pts[1,:]
@@ -193,7 +200,7 @@ def aprrox_sync_callback(lidar, rgb, odom):
             # print("in")
             pts = model(pcl,local_goal)
             # print("out")
-            get_goals(pts/weights, way_pts)
+            get_goals(pts, way_pts)
             counter['index'] += 1
             print(counter['index'])            
             counter['sub-sampler'] = 0
