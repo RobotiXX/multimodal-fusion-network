@@ -16,34 +16,47 @@ class PclMLP(nn.Module):
 
         self.backbone_pcl = PclBackbone().float()
 
-        self.common = nn.Sequential(
-            nn.Linear(63888, 256),
-            nn.LeakyReLU(),            
-            nn.Linear(256,128),
-            nn.LeakyReLU()                   
-        )
+        self.lstm_input = 158400+64
+        self.hidden_state_dim = 1024
+        self.num_layers = 4
 
-        self.previous = nn.Sequential(
-            nn.Linear(64+128,128),
-            nn.LeakyReLU(),
-            # nn.Linear(128,10)            
-        )
+        self.rnn = nn.RNN(self.lstm_input, self.hidden_state_dim, self.num_layers, nonlinearity='relu',batch_first=True)
 
-        self.goal_encoder = make_mlp( [2, 64, 128, 64], 'relu', False, False, 0.0)
+        self.after_rnn = nn.Sequential(
+            nn.Linear(1024,512),
+            nn.ELU()                              
+        )        
+
+        self.predict = nn.Linear(512,22)            
+
+        self.goal_encoder = make_mlp( [2, 128, 64], 'relu', False, False, 0.0)
                 
 
     def forward(self, input, goal):
-                    
-        point_cloud_feat = self.backbone_pcl(input.float())
-        # print(f'point cloud: {point_cloud_feat.shape}')
-        goal = self.goal_encoder(goal)        
+        
+        # batch_size = input.size()[0]
 
-        feat_shared = self.common(point_cloud_feat)
-        feat_shared_with_goal = torch.cat([feat_shared, goal],dim=-1)
+        h0 = torch.zeros(self.num_layers, 1, self.hidden_state_dim, device='cuda')
+        # c0 = torch.zeros(self.num_layers, 1, self.hidden_state_dim,device='cuda')
 
-        goal_encoded = self.previous(feat_shared_with_goal)
-          
-        return point_cloud_feat, feat_shared, goal_encoded
+        point_cloud_feat = self.backbone_pcl(input.float())        
+        goal = self.goal_encoder(goal)            
+        
+        pcl_goal_concat = torch.cat([point_cloud_feat, goal],dim=-1)
+        
+        pcl_goal_concat = pcl_goal_concat.unsqueeze(0)
+
+        rnn_out, _ = self.rnn(pcl_goal_concat, h0)
+
+        # print(f'rnn output: {rnn_out.shape}')
+
+        rnn_out = rnn_out.squeeze(0)
+
+        final_feat = self.after_rnn(rnn_out)
+        
+        prediction = self.predict(final_feat)
+
+        return prediction
 
 
 

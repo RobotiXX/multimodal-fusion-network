@@ -11,6 +11,8 @@ import pyquaternion as pq
 from torch.utils.data import Dataset
 from scipy.spatial.transform import Rotation as R
 from .transformer_pcl import get_voxelized_points
+from .gaussian_weights import get_gaussian_weights
+
 
 coloredlogs.install()
 
@@ -24,11 +26,11 @@ def read_images(path):
     return cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
 def get_transformation_matrix(position, quaternion):
-    q_normalized = quaternion / np.linalg.norm(quaternion)
-    rotation_matrix = R.from_quat(q_normalized).as_matrix()    
-    translation = -np.matmul(rotation_matrix, np.array([position[0],position[1],0]).reshape(3,1))
-    transformation_matrix = np.concatenate([rotation_matrix[:,:3], translation], axis=1)    
-    return transformation_matrix
+    theta = R.from_quat(quaternion).as_euler('XYZ')[2]
+    robo_coordinate_in_glob_frame  = np.array([[np.cos(theta), -np.sin(theta), position[0]],
+                    [np.sin(theta), np.cos(theta), position[1]],
+                    [0, 0, 1]])
+    return robo_coordinate_in_glob_frame
 
 def cart2polar(xyz):
     r = np.sqrt(xyz[:, 0] ** 2 + xyz[:, 1] ** 2)
@@ -62,17 +64,20 @@ class ApplyTransformation(Dataset):
         stacked_images = torch.cat(images, dim=0)
         
         # Transform local goal into robot frame
-        tf_matrix = get_transformation_matrix(self.robot_position[0],self.robot_position[1])        
-        goals = np.concatenate([ np.array(self.way_pts), np.zeros((6,1)), np.ones((6,1))], axis=1).transpose()
+        tf_matrix = get_transformation_matrix(self.robot_position[0],self.robot_position[1])     
+        tf_inverse = np.linalg.pinv(tf_matrix)
 
-        all_pts = np.matmul(tf_matrix, goals) * 100
+        goals = np.concatenate([ np.array(self.way_pts), np.ones((12,1))], axis=1).transpose()
+        
+
+        all_pts = np.matmul(tf_inverse, goals) * get_gaussian_weights(6,3)
         all_pts = all_pts[:2, :]
 
         way_pts = all_pts[:, :-1]
         local_goal = all_pts[:, -1]
 
-        # print(f'{way_pts.shape}')
-        # print(f'{local_goal.shape}')
+        # print(f'{all_pts/150}')
+        # print(f'{local_goal}')
 
         point_clouds = np.array(self.point_clouds[0])   
         point_clouds = get_voxelized_points(point_clouds)
