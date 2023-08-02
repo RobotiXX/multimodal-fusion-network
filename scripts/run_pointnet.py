@@ -36,11 +36,11 @@ min_val_error = 100000
 
 val_dict = {}
 
-weights = get_gaussian_weights(7.5,4.5)
-weights = weights[:,:-1] 
-weights = np.concatenate([weights, weights], axis=1)
-weights = torch.tensor(weights)
-weights = weights.to(device)
+# weights = get_gaussian_weights(7.5,4.5)
+# weights = weights[:,:-1] 
+# weights = np.concatenate([weights, weights], axis=1)
+# weights = torch.tensor(weights)
+# weights = weights.to(device)
 
 def get_loss_fun(loss_type = None):
     if loss_type == 'mse':

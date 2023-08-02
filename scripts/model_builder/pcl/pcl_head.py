@@ -48,15 +48,12 @@ class PclMLP(nn.Module):
 
         rnn_out, _ = self.rnn(pcl_goal_concat, h0)
 
-        # print(f'rnn output: {rnn_out.shape}')
-
         rnn_out = rnn_out.squeeze(0)
 
         final_feat = self.after_rnn(rnn_out)
-        
-        prediction = self.predict(final_feat)
+                
 
-        return prediction
+        return rnn_out, final_feat
 
 
 

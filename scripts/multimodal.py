@@ -13,6 +13,7 @@ from tqdm.auto import tqdm
 import matplotlib.pyplot as plt
 import coloredlogs, logging
 from model_builder.multimodal.multi_net import MultiModalNet
+from data_builder.gaussian_weights import get_gaussian_weights
 
 from torch.optim.lr_scheduler import MultiStepLR,CosineAnnealingWarmRestarts
 
@@ -20,7 +21,7 @@ from torch.optim.lr_scheduler import MultiStepLR,CosineAnnealingWarmRestarts
 experiment = Experiment(
     api_key="Ly3Tc8W7kfxPmAxsArJjX9cgo",
     # project_name= "test",
-    # project_name="image-only",
+    project_name="image-only",
     workspace="bhabaranjan",
 )
 
@@ -34,11 +35,11 @@ min_val_error = 100000
 
 val_dict = {}
 
-root_path = '/home/ranjan/Workspace/my_works/fusion-network/recorded-data'
-model_storage_path = '/home/ranjan/Workspace/my_works/fusion-network/scripts'
+# root_path = '/home/ranjan/Workspace/my_works/fusion-network/recorded-data'
+# model_storage_path = '/home/ranjan/Workspace/my_works/fusion-network/scripts'
 
-# root_path = '/scratch/bpanigr/fusion-network/recorded-data/'
-# model_storage_path = '/home/bpanigr/Workspace/lin_angler_model'
+root_path = '/scratch/bpanigr/fusion-network/recorded-data'
+model_storage_path = '/home/bpanigr/Workspace/lin_angler_model'
 
 
 def clear_dict(dict, epoch):
@@ -46,11 +47,17 @@ def clear_dict(dict, epoch):
         dict.clear()
     return
 
+def get_loss_fun(loss_type = None):
+    if loss_type == 'mse':
+        return torch.nn.MSELoss()
+    else:
+       return torch.nn.L1Loss()
+
 def get_data_loader(input_file_path, read_type, batch_size):
     logging.info(f'Reading {read_type} file from path {input_file_path}')
     indexer = IndexDataset(input_file_path)
     transformer = ApplyTransformation(indexer)
-    data_loader = DataLoader(transformer, batch_size = batch_size, drop_last=False, shuffle=True, prefetch_factor=4,num_workers=6)
+    data_loader = DataLoader(transformer, batch_size = batch_size, drop_last=False, prefetch_factor=4,num_workers=12)
     return data_loader
 
 def get_loss_prev(loss_fn, lin_vel, angular_vel, gt_lin, gt_angular, data_src):
@@ -81,7 +88,7 @@ def get_loss(loss_fn, pts, gt_pts, data_src):
 def run_validation(val_files, model, batch_size, epoch, optim):
        print("Running Validation..\n")
        running_error = []
-       loss = torch.nn.MSELoss()
+       loss = get_loss_fun()
        model.eval()
        with torch.no_grad():
         for val_file in val_files:
@@ -109,10 +116,10 @@ def run_validation(val_files, model, batch_size, epoch, optim):
                 # print(pred_cmd.shape)
 
                 gt_cmd_vel[:,0] /= 10
-                gt_cmd_vel[:,1] /= 80
+                gt_cmd_vel[:,1] /= 85
 
                 pred_cmd[:,0] /= 10
-                pred_cmd[:,1] /= 80
+                pred_cmd[:,1] /= 85
                 
                 # gt_x = torch.unsqueeze(gt_cmd_vel[:,0],1)
                 # gt_y = torch.unsqueeze(gt_cmd_vel[:,1],1)
@@ -147,7 +154,7 @@ def run_validation(val_files, model, batch_size, epoch, optim):
             torch.save({
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optim.state_dict(),
-            }, f'{model_storage_path}/multi_modal_velocities_{epoch+1}.pth')
+            }, f'{model_storage_path}/rnn_multi_modal_velocities_{epoch+1}.pth')
 
         print(f'=========================> Average Validation error is:   { avg_loss_on_validation } \n')
         return avg_loss_on_validation
@@ -155,20 +162,20 @@ def run_validation(val_files, model, batch_size, epoch, optim):
 
 
 def run_training(train_files, val_dirs, batch_size, num_epochs):
-    loss = torch.nn.MSELoss()
+    loss = get_loss_fun()
     model = MultiModalNet()    
 
     model.to(device)
-    optim = torch.optim.Adam(model.parameters(), lr=0.000004)     
-    run_validation(val_dirs, model, batch_size, 0, optim)
-    return
+    optim = torch.optim.Adam(model.parameters(), lr=0.000018)     
+    # run_validation(val_dirs, model, batch_size, 0, optim)
+    # return
     # run_validation(val_dirs, model, batch_size, 2, optim)
     
     # ckpt = torch.load('/scratch/bpanigr/fusion-network/way_latest_model_at_40_2.343480117061302.pth')
     # model.load_state_dict(ckpt['model_state_dict'])
     # run_validation(val_dirs, model, batch_size, 0, optim)
     # return
-    scheduler = MultiStepLR(optim, milestones= [50,100], gamma=.6)
+    scheduler = MultiStepLR(optim, milestones= [20,50,100], gamma=.75)
 
     data_dict = {}
     for epoch in range(num_epochs):
@@ -177,7 +184,7 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
         experiment.log_metric( name = "Learning Rate Decay", value = lr, epoch= epoch+1)
         running_loss = []
         shuffle(train_files)  
-        clear_dict(data_dict,epoch)      
+        # clear_dict(data_dict,epoch)      
         model.train()
         for train_file in train_files:        
             train_loader = None 
@@ -257,8 +264,12 @@ def main():
     
     train_dirs = [ os.path.join(train_path, dir) for dir in os.listdir(train_path)]
     val_dirs = [ os.path.join(validation_path, dir) for dir in os.listdir(validation_path)]
-    batch_size = 10
-    epochs = 250
+
+    train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/136021_wt')
+    train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/138181_wt')
+
+    batch_size = 14
+    epochs = 350
     run_training(train_dirs, val_dirs, batch_size, epochs)
 
 main()

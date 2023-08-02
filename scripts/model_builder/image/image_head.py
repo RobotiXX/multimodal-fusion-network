@@ -44,13 +44,12 @@ class ImageHeadMLP(nn.Module):
         rnn_out, _ = self.rnn(img_feat_with_goal, h0)
         
         rnn_out = rnn_out.squeeze(0)
-
        
         final_feat = self.after_rnn(rnn_out)
         
-        prediction = self.predict(final_feat)
+        # prediction = self.predict(final_feat)
           
-        return prediction
+        return rnn_out, final_feat
 
 
 
