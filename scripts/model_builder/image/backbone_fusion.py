@@ -24,6 +24,7 @@ class ImageFusionModel(nn.Module):
         self.output_layers = output_layers
         # print(backbone,n_frames,n_channels)
         self.backbone = get_backbone(backbone, n_frames, n_channels)
+        self.max_pool = nn.MaxPool2d(kernel_size= 5, stride=2)
         self.selected_out = OrderedDict()
         self.fhooks = []
 
@@ -38,11 +39,20 @@ class ImageFusionModel(nn.Module):
         return hook
     
     def forward(self, stacked_images):
+
+        batchsize = stacked_images.size()[0]
         # print(f"{stacked_images.shape}")
         # image features in shape (B, 512)
         imgs = self.backbone(stacked_images)
 
         features = torch.cat([imgs], dim=-1)
         # return the action in shape (B, 2)
-        # print(f'{features.shape}')
-        return features, self.selected_out
+        # print(self.max_pool(self.selected_out['layer3']).shape)
+
+        pooled_features = self.max_pool(self.selected_out['layer3'])
+
+        pooled_features_linear = pooled_features.contiguous().view(batchsize, -1)        
+
+        # print(f'{pooled_features_linear.shape}')
+
+        return pooled_features_linear
