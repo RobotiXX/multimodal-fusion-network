@@ -25,7 +25,7 @@ experiment = Experiment(
     workspace="bhabaranjan",
 )
 
-experiment.add_tag('image-model')
+experiment.add_tag('rnn-image-model')
 
 coloredlogs.install()
 
@@ -55,7 +55,7 @@ def get_data_loader(input_file_path, read_type, batch_size):
     logging.info(f'Reading {read_type} file from path {input_file_path}')
     indexer = IndexDataset(input_file_path)
     transformer = ApplyTransformation(indexer)
-    data_loader = DataLoader(transformer, batch_size = batch_size, drop_last=False, shuffle=True, prefetch_factor=2,num_workers=8)
+    data_loader = DataLoader(transformer, batch_size = batch_size, drop_last=False, prefetch_factor=2,num_workers=8)
     return data_loader
 
 def get_loss_prev(loss_fn, lin_vel, angular_vel, gt_lin, gt_angular, data_src):
@@ -146,7 +146,7 @@ def run_validation(val_files, model, batch_size, epoch, optim):
             torch.save({
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optim.state_dict(),
-            }, f'/home/bpanigr/Workspace/gw_img_way_pts_model_at_{epoch+1}.pth')
+            }, f'/home/bpanigr/Workspace/rnn_gw_img_way_pts_model_at_{epoch+1}.pth')
 
         print(f'=========================> Average Validation error is:   {avg_loss_on_validation} \n')
         return avg_loss_on_validation
@@ -157,7 +157,7 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
     loss = torch.nn.L1Loss()
     model = ImageHeadMLP()
     model.to(device)
-    optim = torch.optim.Adam(model.parameters(), lr = 0.00000288)     
+    optim = torch.optim.Adam(model.parameters(), lr = 0.0000288)     
     
     # run_validation(val_dirs, model, batch_size, 2, optim)
     
@@ -167,7 +167,7 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
     # return
     # run_validation(val_dirs, model, batch_size, 0, optim)
     
-    scheduler = MultiStepLR(optim, milestones= [40,70,110], gamma=.8)
+    scheduler = MultiStepLR(optim, milestones= [20,70,110], gamma=.8)
 
 
     data_dict = {}
