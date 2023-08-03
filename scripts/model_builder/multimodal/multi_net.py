@@ -32,7 +32,9 @@ class MultiModalNet(nn.Module):
         set_trainable_false(self.pcl)
 
         self.modality_fusion_layer = nn.Sequential(
-            nn.Linear(1024+512,1024),
+            nn.Linear(1024+512,2048),
+            nn.ELU(),
+            nn.Linear(2048,1024),
             nn.ELU()
         )
 
