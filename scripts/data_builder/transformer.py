@@ -12,6 +12,7 @@ from torch.utils.data import Dataset
 from scipy.spatial.transform import Rotation as R
 from .transformer_pcl import get_voxelized_points
 from .gaussian_weights import get_gaussian_weights
+from .cmd_scaler import transform_cmd_vel
 
 
 coloredlogs.install()
@@ -31,11 +32,6 @@ def get_transformation_matrix(position, quaternion):
                     [np.sin(theta), np.cos(theta), position[1]],
                     [0, 0, 1]])
     return robo_coordinate_in_glob_frame
-
-def cart2polar(xyz):
-    r = np.sqrt(xyz[:, 0] ** 2 + xyz[:, 1] ** 2)
-    theta =  np.arctan2(xyz[:, 1], xyz[:, 0])
-    return np.stack((r,theta, xyz[:,2]), axis=1)
 
 
 class ApplyTransformation(Dataset):
@@ -82,9 +78,9 @@ class ApplyTransformation(Dataset):
         point_clouds = np.array(self.point_clouds[0])   
         point_clouds = get_voxelized_points(point_clouds)
 
-        gt_cmd_vel = (10 * self.gt_cmd_vel[0], 85 * np.around(self.gt_cmd_vel[2], 3))
+        gt_cmd_vel = np.array([self.gt_cmd_vel[0], self.gt_cmd_vel[2]])
+        gt_cmd_vel = transform_cmd_vel(gt_cmd_vel)
 
-        
         gt_pts = torch.tensor(way_pts, dtype=torch.float32).ravel()
 
         local_goal = torch.tensor(local_goal, dtype=torch.float32).ravel()        

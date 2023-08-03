@@ -13,14 +13,14 @@ from tqdm.auto import tqdm
 import matplotlib.pyplot as plt
 import coloredlogs, logging
 from model_builder.multimodal.multi_net import MultiModalNet
-from data_builder.gaussian_weights import get_gaussian_weights
+from data_builder.cmd_scaler import transform_to_gt_scale
+
 
 from torch.optim.lr_scheduler import MultiStepLR,CosineAnnealingWarmRestarts
 
 # Create an experiment with your api key
 experiment = Experiment(
-    api_key="Ly3Tc8W7kfxPmAxsArJjX9cgo",
-    # project_name= "test",
+    api_key="Ly3Tc8W7kfxPmAxsArJjX9cgo",    
     project_name="image-only",
     workspace="bhabaranjan",
 )
@@ -40,12 +40,6 @@ val_dict = {}
 
 root_path = '/scratch/bpanigr/fusion-network/recorded-data'
 model_storage_path = '/home/bpanigr/Workspace/lin_angler_model'
-
-
-def clear_dict(dict, epoch):
-    if epoch % 25 == 0:
-        dict.clear()
-    return
 
 def get_loss_fun(loss_type = None):
     if loss_type == 'mse':
@@ -115,12 +109,8 @@ def run_validation(val_files, model, batch_size, epoch, optim):
                 # print(gt_cmd_vel.shape)
                 # print(pred_cmd.shape)
 
-                gt_cmd_vel[:,0] /= 10
-                gt_cmd_vel[:,1] /= 85
-
-                pred_cmd[:,0] /= 10
-                pred_cmd[:,1] /= 85
-                
+                gt_cmd_vel = transform_to_gt_scale(gt_cmd_vel, device)                
+                pred_cmd = transform_to_gt_scale(pred_cmd, device)                        
                 # gt_x = torch.unsqueeze(gt_cmd_vel[:,0],1)
                 # gt_y = torch.unsqueeze(gt_cmd_vel[:,1],1)
 
@@ -154,11 +144,10 @@ def run_validation(val_files, model, batch_size, epoch, optim):
             torch.save({
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optim.state_dict(),
-            }, f'{model_storage_path}/rnn_multi_modal_velocities_{epoch+1}.pth')
+            }, f'{model_storage_path}/intrep_multi_modal_velocities_{epoch+1}.pth')
 
         print(f'=========================> Average Validation error is:   { avg_loss_on_validation } \n')
-        return avg_loss_on_validation
-            
+        return avg_loss_on_validation            
 
 
 def run_training(train_files, val_dirs, batch_size, num_epochs):
@@ -166,16 +155,15 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
     model = MultiModalNet()    
 
     model.to(device)
-    optim = torch.optim.Adam(model.parameters(), lr=0.000018)     
+    optim = torch.optim.Adam(model.parameters(), lr=0.000008)     
     # run_validation(val_dirs, model, batch_size, 0, optim)
     # return
-    # run_validation(val_dirs, model, batch_size, 2, optim)
     
     # ckpt = torch.load('/scratch/bpanigr/fusion-network/way_latest_model_at_40_2.343480117061302.pth')
     # model.load_state_dict(ckpt['model_state_dict'])
     # run_validation(val_dirs, model, batch_size, 0, optim)
     # return
-    scheduler = MultiStepLR(optim, milestones= [20,50,100], gamma=.75)
+    scheduler = MultiStepLR(optim, milestones= [30,70,130], gamma=.75)
 
     data_dict = {}
     for epoch in range(num_epochs):
@@ -268,7 +256,7 @@ def main():
     train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/136021_wt')
     train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/138181_wt')
 
-    batch_size = 14
+    batch_size = 24
     epochs = 350
     run_training(train_dirs, val_dirs, batch_size, epochs)
 
