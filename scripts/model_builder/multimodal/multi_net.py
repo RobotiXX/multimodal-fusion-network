@@ -50,7 +50,7 @@ class MultiModalNet(nn.Module):
             nn.ELU()
         )
 
-        self.predict = nn.Linear(1024,2)
+        self.predict = nn.Linear(1024,1)
 
     def forward(self, stacked_images, pcl, local_goal):
         
