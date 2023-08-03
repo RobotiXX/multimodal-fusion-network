@@ -2,22 +2,23 @@ import numpy as np
 import torch
 
 def clip_velocities(gt_cmd_vel):        
-    gt_cmd_vel[0,0] = np.clip(gt_cmd_vel[0,0], 0, 1.6)
-    gt_cmd_vel[0,1] = np.clip(gt_cmd_vel[0,1], -0.55, 0.55)
+    gt_cmd_vel[:,0] = np.clip(gt_cmd_vel[:,0], 0, 1.6)
+    gt_cmd_vel[:,1] = np.clip(gt_cmd_vel[:,1], -0.55, 0.55)
     return gt_cmd_vel
 
 def scale_min_max(gt_cmd_vel):
-    gt_cmd_vel[0,0] = np.interp(gt_cmd_vel[0,0], (0, 1.6), (0, 20000))
-    gt_cmd_vel[0,1] = np.interp(gt_cmd_vel[0,1], (-0.55, 0.55), (0, 20000))
+    gt_cmd_vel[:,0] = np.interp(gt_cmd_vel[:,0], (0, 1.6), (0, 20000))
+    gt_cmd_vel[:,1] = np.interp(gt_cmd_vel[:,1], (-0.55, 0.55), (0, 20000))
     return gt_cmd_vel
 
 def reverse_scale(gt_cmd_vel):
-    gt_cmd_vel[0,0] = np.interp(gt_cmd_vel[0,0], (0, 20000), (0, 1.6))
-    gt_cmd_vel[0,1] = np.interp(gt_cmd_vel[0,1], (0, 20000), (-0.55, 0.55))
+    gt_cmd_vel[:,0] = np.interp(gt_cmd_vel[:,0], (0, 20000), (0, 1.6))
+    gt_cmd_vel[:,1] = np.interp(gt_cmd_vel[:,1], (0, 20000), (-0.55, 0.55))
     return gt_cmd_vel
 
 def reverse_transform(cmd_vel_tensor):
     cmd_vel = cmd_vel_tensor.cpu().numpy()
+    # print(cmd_vel.shape)
     cmd_scale_reversed = reverse_scale(cmd_vel)
     cmd_scale_reversed_tensor = torch.tensor(cmd_scale_reversed, dtype=torch.float32)
     return cmd_scale_reversed_tensor
