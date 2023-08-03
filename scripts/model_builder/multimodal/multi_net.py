@@ -22,8 +22,8 @@ class MultiModalNet(nn.Module):
         self.image =  ImageHeadMLP()        
         self.pcl =  PclMLP()
 
-        self.pcl_weights = torch_load_weights('/home/ranjan/Workspace/my_works/fusion-network/scripts/pcl_backbone_changed_model_at_100_0.08454692389459491.pth')
-        self.image_weights = torch_load_weights('/home/ranjan/Workspace/my_works/fusion-network/scripts/rnn_gw_img_way_pts_model_at_70.pth')
+        self.pcl_weights = torch_load_weights('/scratch/bpanigr/fusion-network/pcl_backbone_changed_model_at_100_0.08454692389459491.pth')
+        self.image_weights = torch_load_weights('/home/bpanigr/Workspace/rnn_gw_img_way_pts_model_at_140.pth')
         
         self.image.load_state_dict(self.image_weights, strict=False)
         self.pcl.load_state_dict(self.pcl_weights, strict=False)
@@ -34,7 +34,9 @@ class MultiModalNet(nn.Module):
         self.modality_fusion_layer = nn.Sequential(
             nn.Linear(1024+512,2048),
             nn.ELU(),
-            nn.Linear(2048,1024),
+            nn.Linear(2048,2304),
+            nn.ELU(),
+            nn.Linear(2304,1024),
             nn.ELU()
         )
 

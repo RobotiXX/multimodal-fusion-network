@@ -79,6 +79,7 @@ class ApplyTransformation(Dataset):
         point_clouds = get_voxelized_points(point_clouds)
 
         gt_cmd_vel = np.array([self.gt_cmd_vel[0], self.gt_cmd_vel[2]])
+        gt_cmd_vel = np.expand_dims(gt_cmd_vel, axis=0)
         gt_cmd_vel = transform_cmd_vel(gt_cmd_vel)
 
         gt_pts = torch.tensor(way_pts, dtype=torch.float32).ravel()

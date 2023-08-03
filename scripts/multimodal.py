@@ -25,6 +25,8 @@ experiment = Experiment(
     workspace="bhabaranjan",
 )
 
+experiment.add('layer-reduced-bc-multimodal')
+
 coloredlogs.install()
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
