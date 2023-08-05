@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 from ..pcl.pcl_head import PclMLP
 from ..image.image_head import ImageHeadMLP
+from .tf_model import CustomTransformerModel
 
 def set_trainable_false(model):
     for param in model.parameters():
@@ -21,12 +22,13 @@ class MultiModalNet(nn.Module):
         
         self.image =  ImageHeadMLP()        
         self.pcl =  PclMLP()
+        self.transformer = CustomTransformerModel()
 
-        self.pcl_weights = torch_load_weights('/scratch/bpanigr/fusion-network/pcl_backbone_changed_model_at_100_0.08454692389459491.pth')
-        self.image_weights = torch_load_weights('/home/bpanigr/Workspace/rnn_gw_img_way_pts_model_at_140.pth')
+        # self.pcl_weights = torch_load_weights('/scratch/bpanigr/fusion-network/pcl_backbone_changed_model_at_100_0.08454692389459491.pth')
+        # self.image_weights = torch_load_weights('/home/bpanigr/Workspace/rnn_gw_img_way_pts_model_at_140.pth')
         
-        self.image.load_state_dict(self.image_weights, strict=False)
-        self.pcl.load_state_dict(self.pcl_weights, strict=False)
+        # self.image.load_state_dict(self.image_weights, strict=False)
+        # self.pcl.load_state_dict(self.pcl_weights, strict=False)
 
         set_trainable_false(self.image)
         set_trainable_false(self.pcl)
@@ -46,11 +48,11 @@ class MultiModalNet(nn.Module):
         )
 
         self.joint_perception_path_feautres = nn.Sequential(
-            nn.Linear(128+1024,1024),
+            nn.Linear(128+1024,512),
             nn.ELU()
         )
 
-        self.predict = nn.Linear(1024,1)
+        self.predict = nn.Linear(512,1)
 
     def forward(self, stacked_images, pcl, local_goal):
         
@@ -66,9 +68,12 @@ class MultiModalNet(nn.Module):
         global_path_encoding = self.global_path_fusion(second_layer_features)
         
 
-        final_features_concat = torch.cat([global_path_encoding,fustion_features], dim=-1)
-        final_feat = self.joint_perception_path_feautres(final_features_concat)
+        final_features_concat = torch.cat([global_path_encoding,fustion_features], dim=-1).unsqueeze(0)
+        
+        final_feat = self.transformer(final_features_concat)        
 
-        prediction = self.predict(final_feat)
+        final_feat = final_feat.squeeze(0)
+
+        prediction = self.predict(self.joint_perception_path_feautres(final_feat))
 
         return prediction
