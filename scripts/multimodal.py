@@ -21,7 +21,7 @@ from torch.optim.lr_scheduler import MultiStepLR,CosineAnnealingWarmRestarts
 # Create an experiment with your api key
 experiment = Experiment(
     api_key="Ly3Tc8W7kfxPmAxsArJjX9cgo",    
-    project_name="image-only",
+    # project_name="image-only",
     workspace="bhabaranjan",
 )
 
@@ -120,7 +120,7 @@ def run_validation(val_files, model, batch_size, epoch, optim):
                 
                             
             experiment.log_metric(name = str('val_'+val_file.split('/')[-1]+'_pcl'), value=np.average(per_file_loss_pcl), epoch = epoch + 1)            
-
+            print(f'============= perfile loss: {np.average(per_file_loss_pcl)}')
             running_error.append(np.average(per_file_loss_pcl))
         
         avg_loss_on_validation = np.average(running_error)
@@ -145,10 +145,10 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
     # run_validation(val_dirs, model, batch_size, 0, optim)
     # return
     
-    # ckpt = torch.load('/scratch/bpanigr/fusion-network/way_latest_model_at_40_2.343480117061302.pth')
-    # model.load_state_dict(ckpt['model_state_dict'])
-    # run_validation(val_dirs, model, batch_size, 0, optim)
-    # return
+    ckpt = torch.load('/scratch/bpanigr/model_weights/transformer/angler_only_multi_modal_velocities_120.pth')
+    model.load_state_dict(ckpt['model_state_dict'])
+    run_validation(val_dirs, model, batch_size, 0, optim)
+    return
     scheduler = MultiStepLR(optim, milestones= [30,70,130], gamma=.75)
 
     data_dict = {}
