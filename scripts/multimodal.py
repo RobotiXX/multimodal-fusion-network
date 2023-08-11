@@ -240,11 +240,11 @@ def main():
     train_dirs = [ os.path.join(train_path, dir) for dir in os.listdir(train_path)]
     val_dirs = [ os.path.join(validation_path, dir) for dir in os.listdir(validation_path)]
 
-    # train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/136021_wt')
-    # train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/138181_wt')
-    # train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/135968_wt_at')
+    train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/136021_wt')
+    train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/138181_wt')
+    train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/135968_wt_at')
     # # train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/136514_sw_wt_sc')
-    # train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/135967_at')
+    train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/135967_at')
 
     batch_size = 100
     epochs = 350
