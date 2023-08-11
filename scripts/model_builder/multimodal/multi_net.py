@@ -30,8 +30,8 @@ class MultiModalNet(nn.Module):
         # self.image.load_state_dict(self.image_weights, strict=False)
         # self.pcl.load_state_dict(self.pcl_weights, strict=False)
 
-        set_trainable_false(self.image)
-        set_trainable_false(self.pcl)
+        # set_trainable_false(self.image)
+        # set_trainable_false(self.pcl)
 
         self.modality_fusion_layer = nn.Sequential(
             nn.Linear(1024+512,2304),
@@ -41,9 +41,9 @@ class MultiModalNet(nn.Module):
         )
 
         self.global_path_fusion = nn.Sequential(
-            nn.Linear(44,64),
+            nn.Linear(512+256, 512),
             nn.ELU(),
-            nn.Linear(64,128),
+            nn.Linear(512,128),
             nn.ELU()
         )
 
@@ -53,12 +53,13 @@ class MultiModalNet(nn.Module):
         )
 
         self.predict = nn.Linear(512,1)
+        self.predict_path = nn.Linear(512,22)
 
     def forward(self, stacked_images, pcl, local_goal):
         
 
-        rnn_img_out, final_img_feat = self.image(stacked_images, local_goal)
-        rnn_pcl_out, final_pcl_feat = self.pcl(pcl, local_goal)
+        rnn_img_out, final_img_feat, img_pred = self.image(stacked_images, local_goal)
+        rnn_pcl_out, final_pcl_feat, pcl_pred = self.pcl(pcl, local_goal)
 
         backbone_feats = torch.cat([rnn_pcl_out, rnn_img_out], dim=-1)
         fustion_features = self.modality_fusion_layer(backbone_feats)        
@@ -73,7 +74,11 @@ class MultiModalNet(nn.Module):
         final_feat = self.transformer(final_features_concat)        
 
         final_feat = final_feat.squeeze(0)
+        
+        fustion_perception_path = self.joint_perception_path_feautres(final_feat)
 
-        prediction = self.predict(self.joint_perception_path_feautres(final_feat))
+        prediction = self.predict(fustion_perception_path)
 
-        return prediction, final_img_feat, final_pcl_feat
+        prediction_path = self.predict_path(fustion_perception_path)
+
+        return prediction, img_pred, pcl_pred, prediction_path

@@ -22,11 +22,11 @@ from torch.optim.lr_scheduler import MultiStepLR,CosineAnnealingWarmRestarts
 # Create an experiment with your api key
 experiment = Experiment(
     api_key="Ly3Tc8W7kfxPmAxsArJjX9cgo",    
-    # project_name="image-only",
+    project_name="multimodal-net-with-rnn",
     workspace="bhabaranjan",
 )
 
-experiment.add_tag('angler-bc')
+experiment.add_tag('end-to-end-angler-bc')
 experiment.log_asset('/scratch/bpanigr/fusion-network/scripts/model_builder/multimodal/multi_net.py')
 
 coloredlogs.install()
@@ -93,28 +93,42 @@ def run_validation(val_files, model, batch_size, epoch, optim):
             per_file_loss_ǐmage = []
             per_file_loss_pcl = []
             per_file_total_loss = []
-            for index, (stacked_images, pcl ,local_goal, _, gt_cmd_vel) in tqdm(enumerate(val_loader)):
+            per_file_loss_fsn_path = []
+            for index, (stacked_images, pcl ,local_goal, gt_pts, gt_cmd_vel) in tqdm(enumerate(val_loader)):
                 stacked_images = stacked_images.to(device)
                 pcl = pcl.to(device)
                 local_goal= local_goal.to(device)
-                
+                gt_pts = gt_pts.to(device)
                 gt_cmd_vel= gt_cmd_vel.to(device)
                 
-                pred_cmd = model(stacked_images, pcl, local_goal)
+                pred_cmd, img_path, pcl_path, fsn_path = model(stacked_images, pcl, local_goal)
 
                 # print(gt_cmd_vel.shape)
                 # print(pred_cmd.shape)
 
                 gt_cmd_vel = transform_to_gt_scale(gt_cmd_vel, device)                
-                pred_cmd = transform_to_gt_scale(pred_cmd, device)                        
-
-                error_pcl = get_loss(loss, pred_cmd, gt_cmd_vel, 'validation')                            
-                per_file_loss_pcl.append(error_pcl.item())                
+                pred_cmd = transform_to_gt_scale(pred_cmd, device)  
                 
-                            
-            experiment.log_metric(name = str('val_'+val_file.split('/')[-1]+'_pcl'), value=np.average(per_file_loss_pcl), epoch = epoch + 1)            
-            print(f'============= perfile loss: {np.average(per_file_loss_pcl)}')
-            running_error.append(np.average(per_file_loss_pcl))
+                error_fusion = get_loss(loss, pred_cmd, gt_cmd_vel, 'validation')    
+                error_img = get_loss(loss, img_path/ weights, gt_pts/ weights, 'validation')
+                error_pcl = get_loss(loss, pcl_path/ weights, gt_pts/ weights, 'validation')
+                error_fusion_path = get_loss(loss, fsn_path/ weights, gt_pts/ weights, 'validation')
+
+                error_total = error_fusion + error_img + error_pcl+ error_fusion_path
+
+                per_file_loss_fusion.append(error_fusion.item())
+                per_file_loss_ǐmage.append(error_img.item())
+                per_file_loss_pcl.append(error_pcl.item())   
+                per_file_total_loss.append(error_total.item())
+                per_file_loss_fsn_path.append(error_fusion_path.item())
+                                                        
+                
+            experiment.log_metric(name = str('val_'+val_file.split('/')[-1]+'_img'), value=np.average(per_file_loss_ǐmage), epoch= epoch+1)
+            experiment.log_metric(name = str('val_'+val_file.split('/')[-1]+'_pcl'), value=np.average(per_file_loss_pcl), epoch= epoch+1)
+            experiment.log_metric(name = str('val_'+val_file.split('/')[-1]+'_fusion'), value=np.average(per_file_loss_fusion), epoch= epoch+1)                           
+
+            print(f'============= perfile loss fns: {np.average(per_file_loss_fusion)}  img: {np.average(per_file_loss_ǐmage)}  pcl: {np.average(per_file_loss_pcl)} error_fusion_path: {np.average(per_file_loss_fsn_path)} \n')
+            running_error.append(np.average(per_file_total_loss))
         
         avg_loss_on_validation = np.average(running_error)
         # print(f'epoch:------>{epoch}')
@@ -138,10 +152,8 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
     # run_validation(val_dirs, model, batch_size, 0, optim)
     # return
     
-    ckpt = torch.load('/scratch/bpanigr/model_weights/transformer/angler_only_multi_modal_velocities_120.pth')
-    model.load_state_dict(ckpt['model_state_dict'])
-    run_validation(val_dirs, model, batch_size, 0, optim)
-    return
+    # ckpt = torch.load('/scratch/bpanigr/model_weights/transformer/angler_only_multi_modal_velocities_120.pth')
+    # model.load_state_dict(ckpt['model_state_dict'])
     scheduler = MultiStepLR(optim, milestones= [30,70,130], gamma=.75)
 
     data_dict = {}
@@ -167,6 +179,7 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
             per_file_loss_ǐmage = [] 
             per_file_loss_pcl = [] 
             per_file_total_loss = []
+            per_file_loss_fsn_path = []
             for index, (stacked_images, pcl ,local_goal, gt_pts, gt_cmd_vel) in enumerate(train_loader):
 
                 # print(f'gt_cmd: {gt_cmd_vel}')
@@ -180,32 +193,37 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
                 # print(f"{pcl.shape = }")
                 optim.zero_grad()
                 
-                pred_cmd, img_path, pcl_path = model(stacked_images, pcl, local_goal)
+                pred_cmd, img_path, pcl_path, fsn_path = model(stacked_images, pcl, local_goal)
                 
                 
                 error_fusion = get_loss(loss, pred_cmd, gt_cmd_vel,'train_pcl')
-                error_img = get_loss(loss, img_path/weights, gt_pts/weights, 'train_pcl')
-                error_pcl = get_loss(loss, pcl_path/weights, gt_pts/weights, 'train_pcl')
+                error_img = get_loss(loss, img_path, gt_pts, 'train_pcl')
+                error_pcl = get_loss(loss, pcl_path, gt_pts, 'train_pcl')
+                error_fusion_path = get_loss(loss, fsn_path, gt_pts, 'train_pcl')
                 
-                error_total = error_fusion + error_img + error_pcl
+                error_total = error_fusion + error_img + error_pcl+ error_fusion_path
 
                 per_file_loss_fusion.append(error_fusion.item())
                 per_file_loss_ǐmage.append(error_img.item())
                 per_file_loss_pcl.append(error_pcl.item())                
                 per_file_total_loss.append(error_total.item())
+                per_file_loss_fsn_path.append(error_fusion_path.item())
 
-                error_pcl.backward()
+                error_total.backward()
                 optim.step()
 
-                print(f'step is:   {index} and total error is :: {error_pcl.item()}\n')
+                
+                print(f' Step is:  {index}  Loss is fusion :: {error_fusion.item()}  img:{error_img.item()} pcl:{error_pcl.item()} fns_path: {error_fusion_path.item()}\n')
             
             experiment.log_metric(name = str(train_file.split('/')[-1]+ " mod:" +'img'), value=np.average(per_file_loss_ǐmage), epoch= epoch+1)
             experiment.log_metric(name = str(train_file.split('/')[-1]+" mod:" +'pcl'), value=np.average(per_file_loss_pcl), epoch= epoch+1)
             experiment.log_metric(name = str(train_file.split('/')[-1]+" mod:" +'fusion'), value=np.average(per_file_loss_fusion), epoch= epoch+1)
+            print(f' \n ========== perfile loss fns: {np.average(per_file_loss_fusion)}  img: {np.average(per_file_loss_ǐmage)}  pcl: {np.average(per_file_loss_pcl)} fns_path: {np.average(per_file_loss_fsn_path)}   ==================\n')      
             running_loss.append(np.average(per_file_total_loss))   
             
-        scheduler.step()      
-        print(f'================== epoch is: {epoch} and error is: {np.average(running_loss)}==================\n')
+        scheduler.step()
+        
+        print(f'================== epoch is: {epoch} and error is: {np.average(running_loss)}\n')
 
         if (epoch+1) % 2 == 0:
             val_error = run_validation(val_dirs, model, batch_size, epoch, optim)
@@ -222,13 +240,13 @@ def main():
     train_dirs = [ os.path.join(train_path, dir) for dir in os.listdir(train_path)]
     val_dirs = [ os.path.join(validation_path, dir) for dir in os.listdir(validation_path)]
 
-    train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/136021_wt')
-    train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/138181_wt')
-    train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/135968_wt_at')
-    # train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/136514_sw_wt_sc')
-    train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/135967_at')
+    # train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/136021_wt')
+    # train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/138181_wt')
+    # train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/135968_wt_at')
+    # # train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/136514_sw_wt_sc')
+    # train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/135967_at')
 
-    batch_size = 24
+    batch_size = 100
     epochs = 350
     run_training(train_dirs, val_dirs, batch_size, epochs)
 

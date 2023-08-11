@@ -54,7 +54,7 @@ class PclMLP(nn.Module):
 
         prediction = self.predict(final_feat)                
 
-        return rnn_out, prediction
+        return rnn_out, final_feat, prediction
 
 
 

@@ -40,9 +40,9 @@ def get_voxelized_points(points_array):
     grid_indices = np.floor(points_array / voxel_size).astype(int)    
     grid_indices = np.clip(grid_indices, np.array([0,0,0]), np.array([161,121,41]))
 
-    unique_indices, counts = np.unique(grid_indices, return_counts=True, axis=0)
+    # unique_indices, counts = np.unique(grid_indices, return_counts=True, axis=0)
 
-    voxel_grid[unique_indices[:, 0], unique_indices[:, 1], unique_indices[:, 2]] = counts
+    voxel_grid[grid_indices[:, 0], grid_indices[:, 1], grid_indices[:, 2]] = 1
 
     # Convert the voxel grid to a PyTorch tensor
     input_tensor = torch.tensor(voxel_grid, dtype=torch.float32)
