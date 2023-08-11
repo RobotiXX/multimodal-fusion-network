@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 import coloredlogs, logging
 from model_builder.multimodal.multi_net import MultiModalNet
 from data_builder.cmd_scaler import transform_to_gt_scale
+from data_builder.gaussian_weights import get_gaussian_weights
 
 
 from torch.optim.lr_scheduler import MultiStepLR,CosineAnnealingWarmRestarts
@@ -44,6 +45,12 @@ val_dict = {}
 root_path = '/scratch/bpanigr/fusion-network/recorded-data'
 model_storage_path = '/home/bpanigr/Workspace/lin_angler_model'
 
+weights = get_gaussian_weights(6,3)
+weights = weights[:,:-1] 
+weights = np.concatenate([weights, weights], axis=1)
+weights = torch.tensor(weights)
+weights = weights.to(device)
+
 def get_loss_fun(loss_type = None):
     if loss_type == 'mse':
         return torch.nn.MSELoss()
@@ -56,21 +63,7 @@ def get_data_loader(input_file_path, read_type, batch_size):
     transformer = ApplyTransformation(indexer)
     data_loader = DataLoader(transformer, batch_size = batch_size, drop_last=False, prefetch_factor=4,num_workers=12)
     return data_loader
-
-def get_loss_prev(loss_fn, lin_vel, angular_vel, gt_lin, gt_angular, data_src):
-    lin_error =  loss_fn(lin_vel, gt_lin) 
-    anglr_error = loss_fn(angular_vel, gt_angular)
-
-    error = lin_error + anglr_error
-
-    lin_err_val = lin_error.item()
-    anglr_error_val = anglr_error.item()
-
-    experiment.log_metric(name = str('line_error_'+data_src), value=lin_err_val)
-    experiment.log_metric(name = str('anglr_error_'+data_src), value=anglr_error_val)
-
-
-    return error
+   
 
 def get_loss(loss_fn, pts, gt_pts, data_src):
     error =  loss_fn(pts, gt_pts)     
@@ -174,7 +167,7 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
             per_file_loss_ǐmage = [] 
             per_file_loss_pcl = [] 
             per_file_total_loss = []
-            for index, (stacked_images, pcl ,local_goal, _, gt_cmd_vel) in enumerate(train_loader):
+            for index, (stacked_images, pcl ,local_goal, gt_pts, gt_cmd_vel) in enumerate(train_loader):
 
                 # print(f'gt_cmd: {gt_cmd_vel}')
                 # print(f'prev_cmd_vel:{prev_cmd_vel}')
@@ -183,43 +176,33 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
                 pcl = pcl.to(device)
                 local_goal= local_goal.to(device)                
                 gt_cmd_vel= gt_cmd_vel.to(device)
+                gt_pts = gt_pts.to(device)
                 # print(f"{pcl.shape = }")
                 optim.zero_grad()
                 
-                pred_cmd = model(stacked_images, pcl, local_goal)
+                pred_cmd, img_path, pcl_path = model(stacked_images, pcl, local_goal)
                 
-
-                # print(fsn_lin)
-                # print(fsn_anglr)
-
-                # print(gt_x)
-                # print(gt_y)
                 
-                # error_fusion = get_loss(loss, fsn_lin, fsn_anglr, gt_x, gt_y,'train_fusion')
-                # error_img = get_loss(loss, img_lin, img_anglr, gt_x, gt_y, 'train_img')
-                error_pcl = get_loss(loss, pred_cmd, gt_cmd_vel,'train_pcl')
+                error_fusion = get_loss(loss, pred_cmd, gt_cmd_vel,'train_pcl')
+                error_img = get_loss(loss, img_path/weights, gt_pts/weights, 'train_pcl')
+                error_pcl = get_loss(loss, pcl_path/weights, gt_pts/weights, 'train_pcl')
                 
-                # error_total = error_fusion + error_img + error_pcl
+                error_total = error_fusion + error_img + error_pcl
 
-                # per_file_loss_fusion.append(error_fusion.item())
-                # per_file_loss_ǐmage.append(error_img.item())
+                per_file_loss_fusion.append(error_fusion.item())
+                per_file_loss_ǐmage.append(error_img.item())
                 per_file_loss_pcl.append(error_pcl.item())                
-                # per_file_total_loss.append(error_total.item())
+                per_file_total_loss.append(error_total.item())
 
                 error_pcl.backward()
                 optim.step()
 
-                # per_file_loss_fusion.append(error_fusion.item())
-                # per_file_loss_ǐmage.append(error_img.item())
-                per_file_loss_pcl.append(error_pcl.item())
-                # per_file_total_loss.append(error_total.item())
-
                 print(f'step is:   {index} and total error is :: {error_pcl.item()}\n')
             
-            # experiment.log_metric(name = str(train_file.split('/')[-1]+ " mod:" +'img'), value=np.average(per_file_loss_ǐmage), epoch= epoch+1)
+            experiment.log_metric(name = str(train_file.split('/')[-1]+ " mod:" +'img'), value=np.average(per_file_loss_ǐmage), epoch= epoch+1)
             experiment.log_metric(name = str(train_file.split('/')[-1]+" mod:" +'pcl'), value=np.average(per_file_loss_pcl), epoch= epoch+1)
-            # experiment.log_metric(name = str(train_file.split('/')[-1]+" mod:" +'fusion'), value=np.average(per_file_loss_fusion), epoch= epoch+1)
-            running_loss.append(np.average(per_file_loss_pcl))   
+            experiment.log_metric(name = str(train_file.split('/')[-1]+" mod:" +'fusion'), value=np.average(per_file_loss_fusion), epoch= epoch+1)
+            running_loss.append(np.average(per_file_total_loss))   
             
         scheduler.step()      
         print(f'================== epoch is: {epoch} and error is: {np.average(running_loss)}==================\n')
@@ -242,7 +225,7 @@ def main():
     train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/136021_wt')
     train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/138181_wt')
     train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/135968_wt_at')
-    train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/136514_sw_wt_sc')
+    # train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/136514_sw_wt_sc')
     train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/135967_at')
 
     batch_size = 24

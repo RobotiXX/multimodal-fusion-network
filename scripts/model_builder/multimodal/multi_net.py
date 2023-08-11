@@ -76,4 +76,4 @@ class MultiModalNet(nn.Module):
 
         prediction = self.predict(self.joint_perception_path_feautres(final_feat))
 
-        return prediction
+        return prediction, final_img_feat, final_pcl_feat
