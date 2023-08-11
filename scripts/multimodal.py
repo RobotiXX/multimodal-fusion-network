@@ -43,7 +43,7 @@ val_dict = {}
 # model_storage_path = '/home/ranjan/Workspace/my_works/fusion-network/scripts'
 
 root_path = '/scratch/bpanigr/fusion-network/recorded-data'
-model_storage_path = '/home/bpanigr/Workspace/lin_angler_model'
+model_storage_path = '/scratch/bpanigr/model_weights/end-to-end'
 
 weights = get_gaussian_weights(6,3)
 weights = weights[:,:-1] 
