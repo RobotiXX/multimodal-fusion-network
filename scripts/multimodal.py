@@ -137,7 +137,7 @@ def run_validation(val_files, model, batch_size, epoch, optim):
             torch.save({
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optim.state_dict(),
-            }, f'{model_storage_path}/resume_end_to_end_velocities_{epoch+1}_{avg_loss_on_validation}.pth')
+            }, f'{model_storage_path}/resume_optim_end_to_end_velocities_{epoch+1}_{avg_loss_on_validation}.pth')
 
         print(f'=========================> Average Validation error is:   { avg_loss_on_validation } \n')
         return avg_loss_on_validation            
@@ -154,6 +154,8 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
     
     ckpt = torch.load('/scratch/bpanigr/model_weights/end-to-end/end_to_end_velocities_150_0.5871485762779396.pth')
     model.load_state_dict(ckpt['model_state_dict'])
+    optim.load_state_dict(ckpt['optimizer_state_dict'])
+
     scheduler = MultiStepLR(optim, milestones= [80,160,300], gamma=.9)
 
     data_dict = {}
