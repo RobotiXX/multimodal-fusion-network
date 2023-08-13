@@ -41,7 +41,7 @@ class MultiModalNet(nn.Module):
         )
 
         self.global_path_fusion = nn.Sequential(
-            nn.Linear(512+256, 512),
+            nn.Linear(22+22, 512),
             nn.ELU(),
             nn.Linear(512,128),
             nn.ELU()
