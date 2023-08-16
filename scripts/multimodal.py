@@ -26,7 +26,7 @@ experiment = Experiment(
     workspace="bhabaranjan",
 )
 
-experiment.add_tag('end-to-end-angler-bc')
+experiment.add_tag('2-end-to-end-angler-bc')
 experiment.log_asset('/scratch/bpanigr/fusion-network/scripts/model_builder/multimodal/multi_net.py')
 
 coloredlogs.install()
@@ -46,7 +46,7 @@ root_path = '/scratch/bpanigr/fusion-network/recorded-data'
 model_storage_path = '/scratch/bpanigr/model_weights/end-to-end'
 
 weights = get_gaussian_weights(2,1.3)
-weights = weights[:,:-1] 
+weights = weights[:,:4] 
 weights = np.concatenate([weights, weights], axis=1)
 weights = torch.tensor(weights)
 weights = weights.to(device)
@@ -137,7 +137,7 @@ def run_validation(val_files, model, batch_size, epoch, optim):
             torch.save({
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optim.state_dict(),
-            }, f'{model_storage_path}/v3_end_to_end_velocities_{epoch+1}_{avg_loss_on_validation}.pth')
+            }, f'{model_storage_path}/8_end_to_end_velocities_{epoch+1}_{avg_loss_on_validation}.pth')
 
         print(f'=========================> Average Validation error is:   { avg_loss_on_validation } \n')
         return avg_loss_on_validation            
@@ -152,11 +152,11 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
     # run_validation(val_dirs, model, batch_size, 0, optim)
     # return
     
-    ckpt = torch.load('/scratch/bpanigr/model_weights/end-to-end/v2_end_to_end_velocities_100_0.642947574742124.pth')
-    model.load_state_dict(ckpt['model_state_dict'])
-    optim.load_state_dict(ckpt['optimizer_state_dict'])
+    # ckpt = torch.load('/scratch/bpanigr/model_weights/end-to-end/v2_end_to_end_velocities_100_0.642947574742124.pth')
+    # model.load_state_dict(ckpt['model_state_dict'])
+    # optim.load_state_dict(ckpt['optimizer_state_dict'])
 
-    scheduler = MultiStepLR(optim, milestones= [20,50,80,110,230,300], gamma=.75)
+    scheduler = MultiStepLR(optim, milestones= [30,80,130,180,230,300], gamma=.75)
 
     data_dict = {}
     for epoch in range(num_epochs):
@@ -248,7 +248,7 @@ def main():
     # # train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/136514_sw_wt_sc')
     train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/135967_at')
 
-    batch_size = 20
+    batch_size = 90
     epochs = 450
     run_training(train_dirs, val_dirs, batch_size, epochs)
 
