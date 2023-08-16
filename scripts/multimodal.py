@@ -45,7 +45,7 @@ val_dict = {}
 root_path = '/scratch/bpanigr/fusion-network/recorded-data'
 model_storage_path = '/scratch/bpanigr/model_weights/end-to-end'
 
-weights = get_gaussian_weights(6,3)
+weights = get_gaussian_weights(2,1.3)
 weights = weights[:,:-1] 
 weights = np.concatenate([weights, weights], axis=1)
 weights = torch.tensor(weights)
@@ -61,7 +61,7 @@ def get_data_loader(input_file_path, read_type, batch_size):
     logging.info(f'Reading {read_type} file from path {input_file_path}')
     indexer = IndexDataset(input_file_path)
     transformer = ApplyTransformation(indexer)
-    data_loader = DataLoader(transformer, batch_size = batch_size, drop_last=False, prefetch_factor=4,num_workers=20)
+    data_loader = DataLoader(transformer, batch_size = batch_size, drop_last=False, prefetch_factor=3, num_workers=20)
     return data_loader
    
 
@@ -152,7 +152,7 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
     # run_validation(val_dirs, model, batch_size, 0, optim)
     # return
     
-    ckpt = torch.load('/scratch/bpanigr/model_weights/end-to-end/v2_end_to_end_velocities_80_0.7463260796867548.pth')
+    ckpt = torch.load('/scratch/bpanigr/model_weights/end-to-end/v2_end_to_end_velocities_100_0.642947574742124.pth')
     model.load_state_dict(ckpt['model_state_dict'])
     optim.load_state_dict(ckpt['optimizer_state_dict'])
 

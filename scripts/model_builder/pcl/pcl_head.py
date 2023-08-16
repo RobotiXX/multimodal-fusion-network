@@ -27,7 +27,7 @@ class PclMLP(nn.Module):
             nn.ELU()                              
         )        
 
-        self.predict = nn.Linear(512,22)            
+        self.predict = nn.Linear(512,8)            
 
         self.goal_encoder = make_mlp( [2, 128, 64], 'relu', False, False, 0.0)
                 

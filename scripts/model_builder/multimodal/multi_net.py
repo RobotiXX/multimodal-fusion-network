@@ -30,8 +30,8 @@ class MultiModalNet(nn.Module):
         # self.image.load_state_dict(self.image_weights, strict=False)
         # self.pcl.load_state_dict(self.pcl_weights, strict=False)
 
-        # set_trainable_false(self.image)
-        # set_trainable_false(self.pcl)
+        set_trainable_false(self.image)
+        set_trainable_false(self.pcl)
 
         self.modality_fusion_layer = nn.Sequential(
             nn.Linear(1024+512,2304),
@@ -41,9 +41,9 @@ class MultiModalNet(nn.Module):
         )
 
         self.global_path_fusion = nn.Sequential(
-            nn.Linear(22+22, 512),
+            nn.Linear(8+8, 256),
             nn.ELU(),
-            nn.Linear(512,128),
+            nn.Linear(256,128),
             nn.ELU()
         )
 
@@ -53,7 +53,7 @@ class MultiModalNet(nn.Module):
         )
 
         self.predict = nn.Linear(512,1)
-        self.predict_path = nn.Linear(512,22)
+        self.predict_path = nn.Linear(512,8)
 
     def forward(self, stacked_images, pcl, local_goal):
         

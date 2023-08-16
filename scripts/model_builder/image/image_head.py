@@ -27,7 +27,7 @@ class ImageHeadMLP(nn.Module):
             nn.LeakyReLU()
         )
 
-        self.predict = nn.Linear(256,22)
+        self.predict = nn.Linear(256,8)
 
     def forward(self, input, goal):
         
