@@ -61,7 +61,7 @@ def get_data_loader(input_file_path, read_type, batch_size):
     logging.info(f'Reading {read_type} file from path {input_file_path}')
     indexer = IndexDataset(input_file_path)
     transformer = ApplyTransformation(indexer)
-    data_loader = DataLoader(transformer, batch_size = batch_size, drop_last=False, prefetch_factor=3, num_workers=20)
+    data_loader = DataLoader(transformer, batch_size = batch_size, drop_last=False, prefetch_factor=2, num_workers=20)
     return data_loader
    
 
