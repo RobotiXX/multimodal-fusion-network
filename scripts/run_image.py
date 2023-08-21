@@ -7,6 +7,7 @@ from random import shuffle
 from data_builder.indexer import IndexDataset
 from data_builder.transformer import ApplyTransformation
 from data_builder.gaussian_weights import get_gaussian_weights
+from data_builder.cmd_scaler import transform_to_gt_scale
 from model_builder.multimodal.fusion_net import BcFusionModel
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
@@ -119,6 +120,10 @@ def run_validation(val_files, model, batch_size, epoch, optim):
                 # gt_x = torch.unsqueeze(gt_cmd_vel[:,0],1)
                 # gt_y = torch.unsqueeze(gt_cmd_vel[:,1],1)
 
+                                
+                vel = transform_to_gt_scale(vel, device)                
+                gt_cmd = transform_to_gt_scale(gt_cmd, device)  
+
                 # print('\nstart----')
                 # print(pcl_lin)
                 # print(pcl_anglr)
@@ -167,8 +172,7 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
     model.to(device)
     optim = torch.optim.Adam(model.parameters(), lr = 0.0000288)     
     
-    # run_validation(val_dirs, model, batch_size, 2, optim)
-    
+    # run_validation(val_dirs, model, batch_size, 2, optim)  
     # ckpt = torch.load('/home/ranjan/Workspace/my_works/fusion-network/scripts/pre_img_way_pts_model_at_110.pth')
     # model.load_state_dict(ckpt['model_state_dict'])
     # run_validation(val_dirs, model, batch_size, 0, optim)
@@ -176,7 +180,6 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
     # run_validation(val_dirs, model, batch_size, 0, optim)
     
     scheduler = MultiStepLR(optim, milestones= [20,70,110], gamma=.8)
-
 
     data_dict = {}
     for epoch in range(num_epochs):
@@ -216,43 +219,26 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
                 optim.zero_grad()
                 
                 pts, cmd = model(stacked_images, local_goal)
-                
-
-                # print(fsn_lin)
-                # print(fsn_anglr)
-
-                # print(gt_x)
-                # print(gt_y)
-                
-                # error_fusion = get_loss(loss, fsn_lin, fsn_anglr, gt_x, gt_y,'train_fusion')
-                # error_img = get_loss(loss, img_lin, img_anglr, gt_x, gt_y, 'train_img')
                 error_pcl = get_loss(loss, pts, gt_pts,'train_pcl')
                 error_pcl_cmd = get_loss(loss, cmd, gt_cmd,'train_pcl')
-                # error_total = error_fusion + error_img + error_pcl
 
-                # per_file_loss_fusion.append(error_fusion.item())
-                # per_file_loss_ǐmage.append(error_img.item())
                 per_file_loss_pcl.append(error_pcl.item())     
-                per_file_loss_pcl_cmd.append(error_pcl_cmd.item())           
-                # per_file_total_loss.append(error_total.item())
+                per_file_loss_pcl_cmd.append(error_pcl_cmd.item())   
+
                 total_error = error_pcl + error_pcl_cmd
-                total_error.backward()
                 
+                total_error.backward()
                 optim.step()
 
-                # per_file_loss_fusion.append(error_fusion.item())
-                # per_file_loss_ǐmage.append(error_img.item())
-                # per_file_loss_pcl.append(error_pcl.item())
-                # per_file_total_loss.append(error_total.item())
-
                 print(f'step is:   {index} and total path error is :: {error_pcl.item()} total cmd_vel error is : {error_pcl_cmd.item()} \n')
+
             
-            
-            # experiment.log_metric(name = str(train_file.split('/')[-1]+ " mod:" +'img'), value=np.average(per_file_loss_ǐmage), epoch= epoch+1)
             experiment.log_metric(name = str(train_file.split('/')[-1]+" mod:" +'pcl'), value=np.average(per_file_loss_pcl), epoch= epoch+1)
             experiment.log_metric(name = str(train_file.split('/')[-1]+" mod:" +'cmd'), value=np.average(per_file_loss_pcl_cmd), epoch= epoch+1)
+
             std_print(str(train_file.split('/')[-1]), 'path', np.average(per_file_loss_pcl))
             std_print(str(train_file.split('/')[-1]), 'cmd', np.average(per_file_loss_pcl_cmd))
+
             running_loss.append(np.average(per_file_loss_pcl))   
             
         scheduler.step()       
@@ -282,7 +268,7 @@ def main():
     train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/135967_at')
 
 
-    batch_size = 40
+    batch_size = 90
     epochs = 250
     run_training(train_dirs, val_dirs, batch_size, epochs)
 
