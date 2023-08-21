@@ -235,8 +235,9 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
                 per_file_loss_pcl.append(error_pcl.item())     
                 per_file_loss_pcl_cmd.append(error_pcl_cmd.item())           
                 # per_file_total_loss.append(error_total.item())
-
-                error_pcl.backward()
+                total_error = error_pcl + error_pcl_cmd
+                total_error.backward()
+                
                 optim.step()
 
                 # per_file_loss_fusion.append(error_fusion.item())
