@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 from .backbone_fusion import ImageFusionModel
 from .backbone import make_mlp
+from .tf_img import CustomTransformerModelImage 
 
 
 
@@ -14,6 +15,8 @@ class ImageHeadMLP(nn.Module):
 
         super().__init__()
         self.backbone = ImageFusionModel()        
+        self.img_transformer = CustomTransformerModelImage()
+
         self.goal_encoder = make_mlp( [2, 64, 128, 64], 'relu', False, False, 0.0)
 
         self.lstm_input = 36864+64
@@ -27,7 +30,20 @@ class ImageHeadMLP(nn.Module):
             nn.LeakyReLU()
         )
 
-        self.predict = nn.Linear(256,8)
+        self.predict_path = nn.Linear(256,8)
+
+        self.prediction_encoder = nn.Sequential(
+            nn.Linear(8, 256),
+            nn.ELU(),
+            nn.Linear(256,128),
+            nn.ELU()
+        )
+
+        self.predict_vel = nn.Sequential(
+            nn.Linear(512+128, 256),
+            nn.ELU(),
+            nn.Linear(256,1)
+        )
 
     def forward(self, input, goal):
         
@@ -37,8 +53,6 @@ class ImageHeadMLP(nn.Module):
         goal = self.goal_encoder(goal)
 
         img_feat_with_goal = torch.cat([image_features, goal],dim=-1)
-
-        
         img_feat_with_goal = img_feat_with_goal.unsqueeze(0)
 
         rnn_out, _ = self.rnn(img_feat_with_goal, h0)
@@ -47,9 +61,19 @@ class ImageHeadMLP(nn.Module):
        
         final_feat = self.after_rnn(rnn_out)
         
-        prediction = self.predict(final_feat)
+        prediction_path = self.predict_path(final_feat)
+
+        encoded_prediction = self.prediction_encoder(prediction_path)
+
+        tf_input = torch.cat([rnn_out, encoded_prediction],dim=-1).unsqueeze(0)
+        
+        tf_out = self.img_transformer(tf_input)
+
+        tf_out = tf_out.squeeze(0)
+
+        predicted_vel = self.predict_vel(tf_out)
           
-        return rnn_out, prediction, prediction
+        return prediction_path, predicted_vel
 
 
 
