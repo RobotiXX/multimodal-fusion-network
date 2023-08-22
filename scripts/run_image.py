@@ -115,10 +115,6 @@ def run_validation(val_files, model, batch_size, epoch, optim):
                 gt_cmd= gt_cmd.to(device)
                 
                 pts, vel = model(stacked_images, local_goal)
-                
-
-                # gt_x = torch.unsqueeze(gt_cmd_vel[:,0],1)
-                # gt_y = torch.unsqueeze(gt_cmd_vel[:,1],1)
 
                                 
                 vel = transform_to_gt_scale(vel, device)                
