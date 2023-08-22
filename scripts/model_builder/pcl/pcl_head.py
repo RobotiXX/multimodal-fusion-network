@@ -40,9 +40,9 @@ class PclMLP(nn.Module):
         )        
 
         self.predict_vel = nn.Sequential(
-            nn.Linear(512+128, 256),
+            nn.Linear(1024+128, 512),
             nn.ELU(),
-            nn.Linear(256,1)
+            nn.Linear(512,1)
         )
         
                 
@@ -67,7 +67,7 @@ class PclMLP(nn.Module):
 
         final_feat = self.after_rnn(rnn_out)
 
-        prediction_path = self.predict(final_feat)                
+        prediction_path = self.predict_path(final_feat)                
 
         encoded_path = self.predict_path_encoder(prediction_path)
 
