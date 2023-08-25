@@ -17,7 +17,7 @@ class ImageHeadMLP(nn.Module):
         self.backbone = ImageFusionModel()        
         self.img_transformer = CustomTransformerModelImage()
 
-        self.goal_encoder = make_mlp( [2, 64, 128, 64], 'relu', False, False, 0.0)
+        self.goal_encoder = make_mlp( [2, 128, 64], 'relu', False, False, 0.0)
 
         self.lstm_input = 36864+64
         self.hidden_state_dim = 512
@@ -42,7 +42,7 @@ class ImageHeadMLP(nn.Module):
         self.predict_vel = nn.Sequential(
             nn.Linear(512+128, 256),
             nn.ELU(),
-            nn.Linear(256,1)
+            nn.Linear(256,2)
         )
 
     def forward(self, input, goal):
@@ -73,7 +73,7 @@ class ImageHeadMLP(nn.Module):
 
         predicted_vel = self.predict_vel(tf_out)
           
-        return prediction_path, predicted_vel
+        return rnn_out, prediction_path, predicted_vel
 
 
 

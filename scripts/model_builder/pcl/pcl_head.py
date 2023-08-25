@@ -42,14 +42,12 @@ class PclMLP(nn.Module):
         self.predict_vel = nn.Sequential(
             nn.Linear(1024+128, 512),
             nn.ELU(),
-            nn.Linear(512,1)
+            nn.Linear(512,2)
         )
         
                 
 
     def forward(self, input, goal):
-        
-        # batch_size = input.size()[0]
 
         h0 = torch.zeros(self.num_layers, 1, self.hidden_state_dim, device='cuda')
         # c0 = torch.zeros(self.num_layers, 1, self.hidden_state_dim,device='cuda')
@@ -79,7 +77,7 @@ class PclMLP(nn.Module):
 
         predicted_vel = self.predict_vel(tf_out)
 
-        return prediction_path, predicted_vel
+        return rnn_out, prediction_path, predicted_vel
 
 
 
