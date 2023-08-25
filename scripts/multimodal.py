@@ -22,7 +22,7 @@ from torch.optim.lr_scheduler import MultiStepLR,CosineAnnealingWarmRestarts
 # Create an experiment with your api key
 experiment = Experiment(
     api_key="Ly3Tc8W7kfxPmAxsArJjX9cgo",    
-    project_name="image-only",
+    project_name="multimodal-net-with-rnn",
     workspace="bhabaranjan",
 )
 
@@ -75,7 +75,7 @@ def get_loss(loss_fn, pts, gt_pts, data_src):
     return error
 
 def experiment_logger(file_path, prefix, suffix, value, epoch):
-    global experiment
+    # global experiment
     file_name = file_path.split('/')[-1]
     experiment.log_metric(name = prefix+file_name+suffix, value=value, epoch= epoch+1)
     return 
@@ -257,14 +257,14 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
             
             # experiment.log_metric(name = str(train_file.split('/')[-1]+ " mod:" +'img'), value=np.average(per_file_loss_ǐmage), epoch= epoch+1)
 
-            experiment_logger(train_file, "", " mod: fusion", np.average(loss_path_fsn), epoch)
-            experiment_logger(train_file, "", " mod: fusion_cmd", np.average(loss_cmd_fsn), epoch)
+            experiment_logger(train_file, "", " mod:fusion", np.average(loss_path_fsn), epoch)
+            experiment_logger(train_file, "", " mod:fusion_cmd", np.average(loss_cmd_fsn), epoch)
 
-            experiment_logger(train_file, "", " mod: img", np.average(loss_path_img), epoch)
-            experiment_logger(train_file, "", " mod: img_cmd", np.average(loss_cmd_img), epoch)
+            experiment_logger(train_file, "", " mod:img", np.average(loss_path_img), epoch)
+            experiment_logger(train_file, "", " mod:img_cmd", np.average(loss_cmd_img), epoch)
 
-            experiment_logger(train_file, "", " mod: pcl", np.average(loss_path_pcl), epoch)
-            experiment_logger(train_file, "", " mod: pcl_cmd", np.average(loss_cmd_pcl), epoch)
+            experiment_logger(train_file, "", " mod:pcl", np.average(loss_path_pcl), epoch)
+            experiment_logger(train_file, "", " mod:pcl_cmd", np.average(loss_cmd_pcl), epoch)
 
             # experiment.log_metric(name = str(train_file.split('/')[-1]+" mod:" +'pcl'), value=np.average(per_file_loss_pcl), epoch= epoch+1)
             # experiment.log_metric(name = str(train_file.split('/')[-1]+" mod:" +'fusion'), value=np.average(per_file_loss_fusion), epoch= epoch+1)
@@ -296,11 +296,12 @@ def main():
     # train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/136514_sw_wt_sc')
     train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/135967_at')
 
-    batch_size = 90
+    batch_size = 85
     epochs = 450
     run_training(train_dirs, val_dirs, batch_size, epochs)
 
 main()
+
 
 
 
