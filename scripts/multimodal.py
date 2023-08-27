@@ -253,7 +253,7 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
                 optim.step()
 
                 
-                print(f' Step is:  {index}  Loss is fusion :: {error_fusion_path.item(), error_fusion_cmd.item()}  img:{error_img_path.item(), erro_img_cmd.item() } pcl:{error_pcl_path.item(), } fns_path: {error_fusion_path.item(), error_pcl_cmd.item()}\n')
+                print(f' Step is:  {index}  Loss is fusion :: {error_fusion_path.item(), error_fusion_cmd.item()}  img:{error_img_path.item(), erro_img_cmd.item() } pcl:{error_pcl_path.item(), error_pcl_cmd.item()} \n')
             
             # experiment.log_metric(name = str(train_file.split('/')[-1]+ " mod:" +'img'), value=np.average(per_file_loss_ǐmage), epoch= epoch+1)
 
