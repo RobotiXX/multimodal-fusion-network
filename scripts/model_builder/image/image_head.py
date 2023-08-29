@@ -27,7 +27,7 @@ class ImageHeadMLP(nn.Module):
 
         self.after_rnn = nn.Sequential(
             nn.Linear(512,256),            
-            nn.LeakyReLU()
+            nn.ELU() 
         )
 
         self.predict_path = nn.Linear(256,8)

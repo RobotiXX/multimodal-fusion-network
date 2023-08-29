@@ -296,7 +296,7 @@ def main():
     # train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/136514_sw_wt_sc')
     train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/135967_at')
 
-    batch_size = 80
+    batch_size = 90
     epochs = 450
     run_training(train_dirs, val_dirs, batch_size, epochs)
 
