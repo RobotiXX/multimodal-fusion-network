@@ -26,7 +26,7 @@ experiment = Experiment(
     workspace="bhabaranjan",
 )
 
-experiment.add_tag('all-tf-2-end-to-end-angler-bc')
+experiment.add_tag('Multimodal-end-t0-end')
 experiment.log_asset('/scratch/bpanigr/fusion-network/scripts/model_builder/multimodal/multi_net.py')
 
 coloredlogs.install()
@@ -163,7 +163,7 @@ def run_validation(val_files, model, batch_size, epoch, optim):
             torch.save({
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optim.state_dict(),
-            }, f'{model_storage_path}/tf8_end_to_end_velocities_{epoch+1}_{avg_loss_on_validation}.pth')
+            }, f'{model_storage_path}/tf8_img_changed{epoch+1}_{avg_loss_on_validation}.pth')
 
         print(f'=========================> Average Validation error is:   { avg_loss_on_validation } \n')
         return avg_loss_on_validation            
@@ -296,7 +296,7 @@ def main():
     # train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/136514_sw_wt_sc')
     train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/135967_at')
 
-    batch_size = 85
+    batch_size = 80
     epochs = 450
     run_training(train_dirs, val_dirs, batch_size, epochs)
 

@@ -8,12 +8,12 @@ def clip_velocities(gt_cmd_vel):
 
 def scale_min_max(gt_cmd_vel):
     gt_cmd_vel[:,0] = np.interp(gt_cmd_vel[:,0], (0, 1.6), (0, 10000))
-    gt_cmd_vel[:,1] = np.interp(gt_cmd_vel[:,1], (-0.55, 0.55), (0, 20000))
+    gt_cmd_vel[:,1] = np.interp(gt_cmd_vel[:,1], (-0.55, 0.55), (2*10**7, 4*10**7))
     return gt_cmd_vel
 
 def reverse_scale(gt_cmd_vel):
     gt_cmd_vel[:,0] = np.interp(gt_cmd_vel[:,0], (0, 10000), (0, 1.6))
-    gt_cmd_vel[:,1] = np.interp(gt_cmd_vel[:,1], (0, 20000), (-0.55, 0.55))
+    gt_cmd_vel[:,1] = np.interp(gt_cmd_vel[:,1], (2*10**7, 4*10**7), (-0.55, 0.55))
     return gt_cmd_vel
 
 def reverse_transform(cmd_vel_tensor):
