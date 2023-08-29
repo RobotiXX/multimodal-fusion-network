@@ -72,7 +72,7 @@ def _get_resnet(
         "resnet18": models.resnet18,
         "resnet34": models.resnet34,
         "resnet50": models.resnet50,
-    }.get(arch.lower(), models.resnet18)(weights=weights)
+    }.get(arch.lower(), models.resnet18)()
 
     model.conv1 = nn.Conv2d(
         in_channels=n_frames * n_channels, out_channels=model.conv1.out_channels, kernel_size=model.conv1.kernel_size
