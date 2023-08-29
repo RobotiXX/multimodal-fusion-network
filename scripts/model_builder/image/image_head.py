@@ -19,18 +19,18 @@ class ImageHeadMLP(nn.Module):
 
         self.goal_encoder = make_mlp( [2, 128, 64], 'relu', False, False, 0.0)
 
-        self.lstm_input = 36864+64
-        self.hidden_state_dim = 512
+        self.lstm_input = 50176+64
+        self.hidden_state_dim = 1024
         self.num_layers = 4
 
         self.rnn = nn.RNN(self.lstm_input, self.hidden_state_dim, self.num_layers, nonlinearity='relu',batch_first=True)
 
         self.after_rnn = nn.Sequential(
-            nn.Linear(512,256),            
+            nn.Linear(1024,512),            
             nn.LeakyReLU()
         )
 
-        self.predict_path = nn.Linear(256,8)
+        self.predict_path = nn.Linear(512,8)
 
         self.prediction_encoder = nn.Sequential(
             nn.Linear(8, 256),
@@ -40,9 +40,9 @@ class ImageHeadMLP(nn.Module):
         )
 
         self.predict_vel = nn.Sequential(
-            nn.Linear(512+128, 256),
+            nn.Linear(1024+128, 512),
             nn.ELU(),
-            nn.Linear(256,2)
+            nn.Linear(512,2)
         )
 
     def forward(self, input, goal):

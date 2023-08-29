@@ -14,14 +14,14 @@ from tqdm.auto import tqdm
 import matplotlib.pyplot as plt
 import coloredlogs, logging
 from model_builder.pcl.pcl_head import PclMLP
-
+from model_builder.multimodal.multi_net import MultiModalNet
 from torch.optim.lr_scheduler import MultiStepLR, CosineAnnealingWarmRestarts, CyclicLR
 
 # Create an experiment with your api key
 experiment = Experiment(
     api_key="Ly3Tc8W7kfxPmAxsArJjX9cgo",
     # project_name= "test",
-    project_name="image-only",
+    # project_name="image-only",
     workspace="bhabaranjan",
 )
 
@@ -107,19 +107,28 @@ def run_validation(val_files, model, batch_size, epoch, optim):
             per_file_loss_pcl_cmd = []
             for index, (stacked_images, pcl ,local_goal, gt_pts, gt_cmd) in tqdm(enumerate(val_loader)):
                 pcl = pcl.to(device)
-                # pcl = pcl.to(device)
+                stacked_images = stacked_images.to(device)
                 local_goal= local_goal.to(device)
                 
                 gt_pts= gt_pts.to(device)
                 gt_cmd= gt_cmd.to(device)
                 
-                pts, vel = model(pcl, local_goal)
+                pts, vel = model(stacked_images, pcl, local_goal)
 
+                print("\n-------------------")
                                 
+                print(f'print predicted: {vel}')
+                print(f'print gt_cmd: {gt_cmd}')
+                              
                 vel = transform_to_gt_scale(vel, device)                
                 gt_cmd = transform_to_gt_scale(gt_cmd, device)  
 
-                # print('\nstart----')
+                # vel_anglr = vel[:,0]
+                # gt_anglr = gt_cmd[:,0]
+
+
+
+                # error_angler = get_loss(loss, vel_anglr, gt_anglr,'validation')
                 # print(pcl_lin)
                 # print(pcl_anglr)
  
@@ -139,7 +148,9 @@ def run_validation(val_files, model, batch_size, epoch, optim):
                 per_file_loss_pcl.append(error_pcl.item())  
                 per_file_loss_pcl_cmd.append(error_cmd_vel.item())                
                 # per_file_total_loss.append(error_total.item())
-                            
+
+            print(f'avg anglr loss:{np.average(per_file_loss_pcl_cmd)} ')
+
             experiment.log_metric(name = str('val_'+val_file.split('/')[-1]+'_pcl'), value=np.average(per_file_loss_pcl), epoch = epoch + 1)
             experiment.log_metric(name = str('val_'+val_file.split('/')[-1]+'_pcl_cmd'), value=np.average(per_file_loss_pcl_cmd), epoch = epoch + 1)
             std_print(str('val_'+val_file.split('/')[-1]), 'path',np.average(per_file_loss_pcl))
@@ -163,15 +174,15 @@ def run_validation(val_files, model, batch_size, epoch, optim):
 
 def run_training(train_files, val_dirs, batch_size, num_epochs):
     loss = torch.nn.L1Loss()
-    model = PclMLP()
+    model = MultiModalNet()
     model.to(device)
     optim = torch.optim.Adam(model.parameters(), lr=0.0000098)     
     
     # run_validation(val_dirs, model, batch_size, 2, optim)  
-    # ckpt = torch.load('/home/ranjan/Workspace/my_works/fusion-network/scripts/pre_img_way_pts_model_at_110.pth')
-    # model.load_state_dict(ckpt['model_state_dict'])
-    # run_validation(val_dirs, model, batch_size, 0, optim)
-    # return
+    ckpt = torch.load('/home/ranjan/Workspace/my_works/fusion-network/scripts/tf8_end_to_end_velocities_160_0.9251317143167459.pth')
+    model.load_state_dict(ckpt['model_state_dict'])
+    run_validation(val_dirs, model, batch_size, 0, optim)
+    return
     # run_validation(val_dirs, model, batch_size, 0, optim)
     
     scheduler = MultiStepLR(optim, milestones= [30,50,80], gamma=.8)
@@ -206,14 +217,14 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
                 # print(f'prev_cmd_vel:{prev_cmd_vel}')
                 
                 pcl = pcl.to(device)
-                # pcl = pcl.to(device)
+                stacked_images = stacked_images.to(device)
                 local_goal= local_goal.to(device)                
                 gt_pts= gt_pts.to(device)
                 gt_cmd= gt_cmd.to(device)
                 # print(f"{pcl.shape = }")
                 optim.zero_grad()
                 
-                pts, cmd = model(pcl, local_goal)
+                pts, cmd = model(stacked_images, pcl, local_goal)
                 error_pcl = get_loss(loss, pts, gt_pts,'train_pcl')
                 error_pcl_cmd = get_loss(loss, cmd, gt_cmd,'train_pcl')
 
@@ -248,22 +259,22 @@ def run_training(train_files, val_dirs, batch_size, num_epochs):
 
 
 def main():
-    train_path = "/scratch/bpanigr/fusion-network/recorded-data/train"
-    # train_path = "../recorded-data/train"
+    # train_path = "/scratch/bpanigr/fusion-network/recorded-data/train"
+    train_path = "../recorded-data/train"
     train_dirs = [ os.path.join(train_path, dir) for dir in os.listdir(train_path)]
-    # validation_path = '../recorded-data/val'
-    validation_path = '/scratch/bpanigr/fusion-network/recorded-data/val'
+    validation_path = '../recorded-data/val'
+    # validation_path = '/scratch/bpanigr/fusion-network/recorded-data/val'
     val_dirs = [ os.path.join(validation_path, dir) for dir in os.listdir(validation_path)]
 
 
-    train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/136021_wt')
-    train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/138181_wt')
-    train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/135968_wt_at')
-    # # train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/136514_sw_wt_sc')
-    train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/135967_at')
+    # train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/136021_wt')
+    # train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/138181_wt')
+    # train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/135968_wt_at')
+    # # # train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/136514_sw_wt_sc')
+    # train_dirs.remove('/scratch/bpanigr/fusion-network/recorded-data/train/135967_at')
 
 
-    batch_size = 90
+    batch_size = 1
     epochs = 250
     run_training(train_dirs, val_dirs, batch_size, epochs)
 

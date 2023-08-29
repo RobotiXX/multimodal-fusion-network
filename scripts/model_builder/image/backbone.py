@@ -78,12 +78,17 @@ def _get_resnet(
         in_channels=n_frames * n_channels, out_channels=model.conv1.out_channels, kernel_size=model.conv1.kernel_size
     )
 
-    if model.fc.in_features != 512:
-        model.fc = nn.Linear(model.fc.in_features, 512)
-    else:
-        model.fc = nn.Identity()
+    model.fc = nn.Identity()
 
-    return model
+    model.layer4 = nn.Identity()
+    model.avgpool = nn.Identity()
+
+    custom_model = nn.Sequential(
+        *list(model.children())[:-3]
+    )
+
+    # print(custom_model)
+    return custom_model
 
 
 def _get_mobilenet(

@@ -24,35 +24,35 @@ class ImageFusionModel(nn.Module):
         self.output_layers = output_layers
         # print(backbone,n_frames,n_channels)
         self.backbone = get_backbone(backbone, n_frames, n_channels)
-        self.max_pool = nn.MaxPool2d(kernel_size= 5, stride=2)
-        self.selected_out = OrderedDict()
-        self.fhooks = []
+    #     print(self.backbone)
+        self.max_pool = nn.MaxPool2d(kernel_size= 5, stride=2, padding=(2,2))
+    #     self.selected_out = OrderedDict()
+    #     self.fhooks = []
 
-        for i, l in enumerate(list(self.backbone._modules.keys())):
-            if i in self.output_layers:
-                self.fhooks.append(getattr(self.backbone,l).register_forward_hook(self.forward_hook(l)))
+    #     for i, l in enumerate(list(self.backbone._modules.keys())):
+    #         if i in self.output_layers:
+    #             self.fhooks.append(getattr(self.backbone,l).register_forward_hook(self.forward_hook(l)))
             
 
-    def forward_hook(self, layer_name):
-        def hook(module, input, output):
-            self.selected_out[layer_name] = output
-        return hook
+    # def forward_hook(self, layer_name):
+    #     def hook(module, input, output):
+    #         self.selected_out[layer_name] = output
+    #     return hook
     
     def forward(self, stacked_images):
 
         batchsize = stacked_images.size()[0]
         # print(f"{stacked_images.shape}")
         # image features in shape (B, 512)
-        imgs = self.backbone(stacked_images)
+        imgs = self.max_pool( self.backbone(stacked_images))
+        
 
-        features = torch.cat([imgs], dim=-1)
-        # return the action in shape (B, 2)
-        # print(self.max_pool(self.selected_out['layer3']).shape)
+        linear_img_feat = imgs.contiguous().view(batchsize, -1)        
 
-        pooled_features = self.max_pool(self.selected_out['layer3'])
-
-        pooled_features_linear = pooled_features.contiguous().view(batchsize, -1)        
-
+        # print(linear_img_feat.shape)
         # print(f'{pooled_features_linear.shape}')
 
-        return pooled_features_linear
+        return linear_img_feat
+
+
+# ImageFusionModel()
