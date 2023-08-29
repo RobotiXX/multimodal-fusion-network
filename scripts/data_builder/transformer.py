@@ -23,8 +23,10 @@ coloredlogs.install()
 def read_images(path):
     # print(f"{path = }")
     image = cv2.imread(path)
+    image_float = image.astype('float32')
+    image_float /= 255.0
     # Will have to do some re-sizing
-    return cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    return cv2.cvtColor(image_float, cv2.COLOR_BGR2RGB)
 
 def get_transformation_matrix(position, quaternion):
     theta = R.from_quat(quaternion).as_euler('XYZ')[2]

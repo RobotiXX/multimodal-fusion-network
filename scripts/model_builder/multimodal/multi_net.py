@@ -27,7 +27,7 @@ class MultiModalNet(nn.Module):
 
 
         self.modality_fusion_layer = nn.Sequential(
-            nn.Linear(1024+512,2304),
+            nn.Linear(1024+1024,2304),
             nn.ELU(),
             nn.Linear(2304,1024),
             nn.ELU()
@@ -47,13 +47,6 @@ class MultiModalNet(nn.Module):
             nn.Linear(256,128),
             nn.ELU()
         )
-
-        # self.global_path_fusion = nn.Sequential(
-        #     nn.Linear(8+8, 256),
-        #     nn.ELU(),
-        #     nn.Linear(256,128),
-        #     nn.ELU()
-        # )
 
         self.joint_perception_path_feautres = nn.Sequential(
             nn.Linear(128+1024,512),
@@ -92,4 +85,4 @@ class MultiModalNet(nn.Module):
 
         fusion_vel = self.predict_vel(fustion_perception_path)
 
-        return fsn_global_path, fusion_vel, img_path, img_vel, pcl_path, pcl_vel
+        return fsn_global_path, fusion_vel,  img_path, img_vel, pcl_path, pcl_vel
