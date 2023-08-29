@@ -27,7 +27,7 @@ class MultiModalNet(nn.Module):
 
 
         self.modality_fusion_layer = nn.Sequential(
-            nn.Linear(1024+1024,2304),
+            nn.Linear(1024+512,2304),
             nn.ELU(),
             nn.Linear(2304,1024),
             nn.ELU()
