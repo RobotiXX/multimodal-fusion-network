@@ -19,7 +19,7 @@ from torch.optim.lr_scheduler import MultiStepLR, CosineAnnealingWarmRestarts, C
 
 # Create an experiment with your api key
 experiment = Experiment(
-    api_key="Ly3Tc8W7kfxPmAxsArJjX9cgo",
+    #api_key="",
     # project_name= "test",
     # project_name="image-only",
     workspace="bhabaranjan",
