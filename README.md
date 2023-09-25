@@ -2,7 +2,7 @@
 
 ## Network Architecture
 
-You can find our paper on: I will put the arXiv link here.
+You can find our paper on: https://arxiv.org/abs/2309.12568
 
 For a visual overview of our paper please, visit: https://www.youtube.com/watch?v=5j8mAK9ecjs
 
@@ -14,7 +14,9 @@ For a visual overview of our paper please, visit: https://www.youtube.com/watch?
 
 ## Parsing Data from SCAND ROSBAGS
 
-You can download `SCAND ROSBAGS` from `https://dataverse.tdl.org/dataset.xhtml?persistentId=doi:10.18738/T8/0PRYRH`. 
+You can download `SCAND ROSBAGS` from the
+
+`https://dataverse.tdl.org/dataset.xhtml?persistentId=doi:10.18738/T8/0PRYRH`. 
 
 All this files will be used to extract necessary sensor data for training the model.
 
